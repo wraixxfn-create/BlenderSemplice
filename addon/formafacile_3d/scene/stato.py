@@ -14,6 +14,7 @@ import bpy
 
 from .. import comandi, configuration
 from ..localization import TESTI
+from . import libreria
 
 
 def _voci_asse_allinea():
@@ -47,6 +48,26 @@ def _voci_riferimento_allinea():
         )
         for chiave in comandi.RIFERIMENTI_ALLINEAMENTO
     )
+
+
+_PREIMPOSTAZIONI_ASSET = {
+    libreria.ASSET_TAVOLINO: {"asset_larghezza": 1.2, "asset_profondita": 0.7, "asset_altezza": 0.75, "asset_spessore": 0.06, "asset_spessore_gamba": 0.07},
+    libreria.ASSET_SCAFFALE: {"asset_larghezza": 1.2, "asset_profondita": 0.35, "asset_altezza": 2.0, "asset_spessore": 0.04, "asset_numero_ripiani": 3},
+    libreria.ASSET_SEDIA: {"asset_larghezza": 0.45, "asset_profondita": 0.5, "asset_altezza": 0.9, "asset_spessore": 0.045, "asset_spessore_gamba": 0.05},
+    libreria.ASSET_PIEDISTALLO: {"asset_larghezza": 0.8, "asset_profondita": 0.8, "asset_altezza": 1.2, "asset_spessore": 0.08},
+    libreria.ASSET_VASO: {"asset_altezza": 0.5, "asset_raggio": 0.2, "asset_spessore_parete": 0.02},
+    libreria.ASSET_INSEGNA: {"asset_larghezza": 1.2, "asset_altezza": 0.6, "asset_spessore": 0.06},
+    libreria.ASSET_STANZA: {"asset_larghezza": 4.0, "asset_profondita": 4.0, "asset_altezza": 3.0, "asset_spessore": 0.12},
+    libreria.ASSET_PEDANA: {"asset_diametro": 1.2, "asset_altezza": 0.12},
+    libreria.ASSET_SET_FOTOGRAFICO: {"asset_larghezza": 4.0, "asset_profondita": 3.5, "asset_altezza": 3.0, "asset_spessore": 0.08, "asset_potenza_luce": 1200.0},
+    libreria.ASSET_FORMA_STAMPA: {"asset_grandezza": 0.5},
+}
+
+
+def _aggiorna_preimpostazione_asset(stato, _contesto) -> None:
+    """Carica misure di partenza adatte al modello appena selezionato."""
+    for nome, valore in _PREIMPOSTAZIONI_ASSET.get(stato.asset_selezionato, {}).items():
+        setattr(stato, nome, valore)
 
 
 class FORMAFACILE_PG_stato(bpy.types.PropertyGroup):
@@ -83,6 +104,66 @@ class FORMAFACILE_PG_stato(bpy.types.PropertyGroup):
         max=configuration.DIMENSIONE_FORMA_MASSIMA,
         precision=2,
         unit="LENGTH",
+    )
+    asset_selezionato: bpy.props.EnumProperty(
+        name=TESTI["ASSET_SELEZIONA"],
+        description=TESTI["ASSET_AIUTO_SELEZIONA"],
+        items=libreria.voci_elenco(),
+        default=libreria.ID_PREDEFINITO,
+        update=_aggiorna_preimpostazione_asset,
+    )
+    asset_larghezza: bpy.props.FloatProperty(
+        name=TESTI["ASSET_CAMPO_LARGHEZZA"], description=TESTI["ASSET_CAMPO_LARGHEZZA"],
+        default=1.2, min=0.05, max=50.0, precision=2, unit="LENGTH",
+    )
+    asset_profondita: bpy.props.FloatProperty(
+        name=TESTI["ASSET_CAMPO_PROFONDITA"], description=TESTI["ASSET_CAMPO_PROFONDITA"],
+        default=0.7, min=0.05, max=50.0, precision=2, unit="LENGTH",
+    )
+    asset_altezza: bpy.props.FloatProperty(
+        name=TESTI["ASSET_CAMPO_ALTEZZA"], description=TESTI["ASSET_CAMPO_ALTEZZA"],
+        default=0.75, min=0.05, max=50.0, precision=2, unit="LENGTH",
+    )
+    asset_spessore: bpy.props.FloatProperty(
+        name=TESTI["ASSET_CAMPO_SPESSORE"], description=TESTI["ASSET_CAMPO_SPESSORE"],
+        default=0.06, min=0.005, max=5.0, precision=3, unit="LENGTH",
+    )
+    asset_spessore_gamba: bpy.props.FloatProperty(
+        name=TESTI["ASSET_CAMPO_SPESSORE_GAMBA"], description=TESTI["ASSET_CAMPO_SPESSORE_GAMBA"],
+        default=0.07, min=0.01, max=5.0, precision=3, unit="LENGTH",
+    )
+    asset_numero_ripiani: bpy.props.IntProperty(
+        name=TESTI["ASSET_CAMPO_NUMERO_RIPIANI"],
+        description=TESTI["ASSET_CAMPO_NUMERO_RIPIANI"], default=3, min=1, max=8,
+    )
+    asset_raggio: bpy.props.FloatProperty(
+        name=TESTI["ASSET_CAMPO_RAGGIO"], description=TESTI["ASSET_CAMPO_RAGGIO"],
+        default=0.2, min=0.03, max=10.0, precision=2, unit="LENGTH",
+    )
+    asset_spessore_parete: bpy.props.FloatProperty(
+        name=TESTI["ASSET_CAMPO_SPESSORE_PARETE"],
+        description=TESTI["ASSET_CAMPO_SPESSORE_PARETE"],
+        default=0.02, min=0.002, max=2.0, precision=3, unit="LENGTH",
+    )
+    asset_testo: bpy.props.StringProperty(
+        name=TESTI["ASSET_CAMPO_TESTO"], description=TESTI["ASSET_CAMPO_TESTO"],
+        default="CIAO", maxlen=64,
+    )
+    asset_colore: bpy.props.FloatVectorProperty(
+        name=TESTI["ASSET_CAMPO_COLORE"], description=TESTI["ASSET_CAMPO_COLORE"],
+        subtype="COLOR", size=4, min=0.0, max=1.0, default=(0.56, 0.32, 0.16, 1.0),
+    )
+    asset_diametro: bpy.props.FloatProperty(
+        name=TESTI["ASSET_CAMPO_DIAMETRO"], description=TESTI["ASSET_CAMPO_DIAMETRO"],
+        default=1.2, min=0.05, max=50.0, precision=2, unit="LENGTH",
+    )
+    asset_grandezza: bpy.props.FloatProperty(
+        name=TESTI["ASSET_CAMPO_GRANDEZZA"], description=TESTI["ASSET_CAMPO_GRANDEZZA"],
+        default=0.5, min=0.05, max=20.0, precision=2, unit="LENGTH",
+    )
+    asset_potenza_luce: bpy.props.FloatProperty(
+        name=TESTI["ASSET_CAMPO_POTENZA_LUCE"], description=TESTI["ASSET_CAMPO_POTENZA_LUCE"],
+        default=1200.0, min=10.0, max=20000.0, precision=0,
     )
     # Impostazioni dell'allineamento: si scelgono una volta e valgono per ogni
     # pressione di Allinea e Spazia, come la modalità di lavoro.

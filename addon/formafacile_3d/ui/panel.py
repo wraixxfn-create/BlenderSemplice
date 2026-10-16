@@ -1,10 +1,11 @@
 """Pannelli di FormaFacile nella barra laterale della Vista 3D.
 
-I pannelli sono quattro e seguono il risultato che l'utente vuole ottenere,
-non la struttura interna di Blender:
+I pannelli sono cinque in modalità Semplice e sei in modalità Completa; seguono
+il risultato che l'utente vuole ottenere, non la struttura interna di Blender:
 
 * Azioni principali: costruisci, guarda la scena, annulla e ripeti;
 * La mia scena: elenco oggetti, scelta, visibilità, rinomina;
+* Libreria di oggetti: descrizioni, parametri e modelli geometrici;
 * Oggetto scelto: comandi che cambiano in base alla scelta;
 * Dai forma: strumenti guidati e guida passo passo per rifinire le forme;
 * Comandi di Blender: solo nella modalità completa.
@@ -63,13 +64,23 @@ class FORMAFACILE_PT_scena(_PannelloFormaFacile):
     chiave_piano = "scena"
 
 
+class FORMAFACILE_PT_libreria(_PannelloFormaFacile):
+    """Catalogo di modelli geometrici da configurare e inserire."""
+
+    bl_label = TESTI["TITOLO_PANNELLO_LIBRERIA"]
+    bl_idname = "FORMAFACILE_PT_libreria"
+    bl_parent_id = "FORMAFACILE_PT_principale"
+    bl_order = 2
+    chiave_piano = "libreria"
+
+
 class FORMAFACILE_PT_oggetto(_PannelloFormaFacile):
     """Pannello contestuale: cambia con la scelta dell'utente."""
 
     bl_label = TESTI["TITOLO_PANNELLO_OGGETTO"]
     bl_idname = "FORMAFACILE_PT_oggetto"
     bl_parent_id = "FORMAFACILE_PT_principale"
-    bl_order = 2
+    bl_order = 3
     chiave_piano = "oggetto"
 
 
@@ -79,7 +90,7 @@ class FORMAFACILE_PT_modella(_PannelloFormaFacile):
     bl_label = TESTI["TITOLO_PANNELLO_MODELLA"]
     bl_idname = "FORMAFACILE_PT_modella"
     bl_parent_id = "FORMAFACILE_PT_principale"
-    bl_order = 3
+    bl_order = 4
     chiave_piano = "modella"
 
 
@@ -89,7 +100,7 @@ class FORMAFACILE_PT_completo(_PannelloFormaFacile):
     bl_label = TESTI["TITOLO_PANNELLO_COMPLETO"]
     bl_idname = "FORMAFACILE_PT_completo"
     bl_parent_id = "FORMAFACILE_PT_principale"
-    bl_order = 4
+    bl_order = 5
     bl_options = {"DEFAULT_CLOSED"}
     chiave_piano = "completo"
 
@@ -120,6 +131,7 @@ class FORMAFACILE_HT_barra(bpy.types.Header):
 CLASSI = (
     FORMAFACILE_PT_principale,
     FORMAFACILE_PT_scena,
+    FORMAFACILE_PT_libreria,
     FORMAFACILE_PT_oggetto,
     FORMAFACILE_PT_modella,
     FORMAFACILE_PT_completo,

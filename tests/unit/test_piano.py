@@ -97,7 +97,7 @@ STRUMENTI_SENZA_ELENCHI = tuple(
 )
 
 # Chiavi dei pannelli nell'ordine in cui compaiono, secondo la modalità.
-PANNELLI_SEMPLICE = ("principale", "scena", "oggetto", "modella")
+PANNELLI_SEMPLICE = ("principale", "scena", "libreria", "oggetto", "modella")
 PANNELLI = (*PANNELLI_SEMPLICE, "completo")
 
 
@@ -177,7 +177,7 @@ class TestStrutturaDelPiano(unittest.TestCase):
             modalita=configuration.MODALITA_COMPLETA,
         )
         usati = set()
-        for chiave in ("principale", "scena", "oggetto", "completo"):
+        for chiave in ("principale", "scena", "libreria", "oggetto", "completo"):
             usati.update(identificatori(contesto_ui, chiave))
         estranei = {nome for nome in usati if nome.startswith("formafacile.")} - dichiarati
         self.assertEqual(estranei, set())
@@ -239,6 +239,34 @@ class TestCostruisci(unittest.TestCase):
                 self.assertIn(TESTI[chiave], testo)
         self.assertIn(TESTI["AZIONE_AGGIUNGI_CUBO"], testo)
         self.assertIn(TESTI["AZIONE_AGGIUNGI_LUCE"], testo)
+
+    def test_libreria_mostra_descrizione_parametri_e_inserimento(self):
+        contesto_ui = contesto(asset_selezionato="scaffale")
+        testo = testi(contesto_ui, "libreria")
+        self.assertIn(TESTI["ASSET_NOME_SCAFFALE"], " ".join(testo))
+        self.assertIn(TESTI["ASSET_DESCRIZIONE_SCAFFALE"].split()[0], " ".join(testo))
+        self.assertIn(TESTI["ASSET_CAMPO_NUMERO_RIPIANI"], testo)
+        self.assertIn(TESTI["ASSET_AZIONE_AGGIUNGI"], testo)
+        campi = elementi(contesto_ui, "libreria", Campo)
+        self.assertEqual(
+            [campo.proprieta for campo in campi],
+            [
+                "asset_selezionato",
+                "asset_larghezza",
+                "asset_profondita",
+                "asset_altezza",
+                "asset_numero_ripiani",
+                "asset_spessore",
+                "asset_colore",
+            ],
+        )
+        self.assertIn(comandi.ID_AGGIUNGI_ASSET, identificatori(contesto_ui, "libreria"))
+
+    def test_libreria_disabilita_solo_l_inserimento_in_modalita_modifica(self):
+        contesto_ui = contesto(in_modalita_oggetto=False)
+        pannello_ui = pannello(contesto_ui, "libreria")
+        self.assertTrue(any(riga.disabilitata for gruppo in pannello_ui.gruppi for riga in gruppo.righe))
+        self.assertIn(TESTI["ASSET_SELEZIONA"], testi(contesto_ui, "libreria"))
 
     def test_annulla_e_ripeti_sono_sempre_visibili(self):
         """Anche nella scena vuota i due pulsanti più cercati restano a portata."""

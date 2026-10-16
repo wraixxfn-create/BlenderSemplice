@@ -10,11 +10,20 @@ ancora provato a mano.
 
 - Programma di avvio configurabile, con controllo della serie Blender 4.5.x.
 - Estensione Blender con metadati e registrazione/disattivazione pulite e ripetibili.
-- Quattro pannelli italiani nella barra laterale della Vista 3D (**Azioni principali**, **La mia
-  scena**, **Oggetto scelto**, **Comandi di Blender**) e un pulsante nella testata che apre la barra.
+- Cinque pannelli italiani in modalità Semplice (**Azioni principali**, **La mia scena**,
+  **Libreria di oggetti**, **Oggetto scelto**, **Dai forma**) e un sesto pannello (**Comandi di
+  Blender**) nella modalità Completa; un pulsante nella testata apre la barra.
 - Creazione di **Cubo**, **Sfera**, **Cilindro**, **Cono**, **Piano**, **Ciambella**, **Testo**
   e **Luce**, con nomi italiani per oggetto e geometria e posizione libera vicino al cursore 3D;
   la grandezza delle nuove forme si regola da un solo campo, che porta l'unità della scena.
+- **Libreria di oggetti**: tavolino, scaffale con numero di ripiani regolabile, sedia stilizzata,
+  piedistallo, vaso cavo con spessore della parete, insegna con testo estruso modificabile, stanza,
+  pedana circolare, set fotografico con fondale e tre luci di area, e quattro forme solide per la
+  stampa 3D. La selezione mostra descrizione e campi italiani prima dell'inserimento. Ogni modello
+  viene generato da mesh o curve reali in una raccolta nuova con materiale indipendente; le parti
+  mesh sono statiche dopo la creazione ma modificabili in Modalità Modifica. Le prove verificano
+  dimensioni, oggetti, messaggi, annullamento degli errori e rimozione senza danneggiare geometrie
+  preesistenti. Non è stata eseguita una prova visiva in Vista 3D o con un'immagine finale.
 - Scelta degli oggetti: **Tutti**, **Nessuno**, **Inverti**, **Stesso tipo**, scelta per nome
   dall'elenco (anche con più oggetti), casella di scelta su ogni riga.
 - Elenco della scena con conteggio in parole, ricerca per nome quando serve, oggetti nascosti
@@ -77,10 +86,11 @@ ancora provato a mano.
 
 ## Funzioni non ancora presenti
 
-Non ci sono ancora: materiali e colori semplificati, sfondo, anteprima e immagine finale,
-animazione, gerarchia fra oggetti, salvataggio e riapertura con un flusso FormaFacile dedicato,
-importazione ed esportazione, altre guide passo passo oltre a quella della casetta e assistente di
-intelligenza artificiale. **Non esistono pulsanti fittizi per queste funzioni**: i pannelli mostrano solo comandi
+Non ci sono ancora strumenti generali per materiali e colori, fondali indipendenti, anteprima e
+immagine finale, animazione, gerarchia fra oggetti, salvataggio e riapertura con un flusso FormaFacile
+dedicato, importazione ed esportazione, altre guide passo passo oltre a quella della casetta e
+assistente di intelligenza artificiale. Colori, fondale e luci si configurano soltanto nei modelli
+della libreria. **Non esistono pulsanti fittizi per queste funzioni**: i pannelli mostrano solo comandi
 che hanno un effetto reale.
 
 Il programma di avvio apre la scena iniziale di Blender e non sostituisce la schermata iniziale né
@@ -91,10 +101,10 @@ della Vista 3D. Salvataggio e riapertura usano i normali comandi di Blender.
 
 - Sistema rilevato: Debian GNU/Linux 12, Python 3.11.
 - Il comando `blender` non è presente nel `PATH`: non c'è una distribuzione Blender grafica.
-- Il pacchetto `bpy==4.5.14` è installato in un ambiente virtuale separato (`/.venv`, escluso dal
+- Il pacchetto `bpy==4.5.14` è installato in un ambiente virtuale separato (`.venv`, escluso dal
   repository). Non è l'applicazione completa, ma espone la stessa interfaccia di programmazione,
   quindi le prove di `tests/blender/test_addon.py` sono state **eseguite davvero**:
-  `python3 scripts/controlla.py --test-bpy` (3464 controlli superati, più 207 prove di unità).
+  `python3 scripts/controlla.py --test-bpy` (3685 controlli superati, più 214 prove di unità).
   Le librerie grafiche di sistema mancanti (`libXrender`, `libXfixes`, `libXi`, `libxkbcommon`,
   `libSM`, `libICE`, `libGL`) vengono sostituite da librerie fittizie preparate da
   `scripts/ambiente_bpy_locale.py` nella cartella `.cache/librerie_bpy`: servono solo ad avviare il
@@ -137,7 +147,7 @@ Verificato automaticamente senza finestre:
 - esistenza e funzionamento dei comandi nativi di navigazione (`view_all`, `view_axis`, …);
 - cambio di disposizione dei pannelli (divisione di un'area in due Viste 3D), registrazione delle
   viste iniziali di tutte le disposizioni disponibili, avviso chiaro quando non esiste una Vista 3D;
-- disegno dei cinque pannelli e della testata sui dati veri: ogni pulsante esiste, ogni icona è fra
+- disegno dei sei pannelli (cinque in modalità Semplice) e della testata sui dati veri: ogni pulsante esiste, ogni icona è fra
   quelle verificate, ogni campo è collegato a un dato esistente, nessun testo inglese di ripiego,
   nessun nome tecnico nella modalità Semplice;
 - elenco lungo (limite e avviso), ricerca per nome (con e senza risultati), messaggio recente e

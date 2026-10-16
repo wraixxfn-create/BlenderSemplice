@@ -77,13 +77,14 @@ un'eccezione non deve passare inosservato.
 | File | Che cosa verifica | Serve Blender? |
 | --- | --- | --- |
 | `tests/unit/test_configuration.py` | lingua italiana di sessione e valori predefiniti | no |
+| `tests/unit/test_asset_library.py` | catalogo italiano, descrizioni statiche, campi e dieci schede della libreria | no |
 | `tests/unit/test_launcher.py` | ricerca di Blender, versione, configurazione utente | no |
 | `tests/unit/test_localization.py` | testi centrali, segnaposto inglesi, chiavi usate inesistenti e chiavi mai nominate | no |
 | `tests/unit/test_packaging.py` | contenuto dell'archivio installabile | no |
 | `tests/unit/test_piano.py` | regole dei pannelli: nessuna scelta, una, molte, modalità semplice/completa, elenco lungo, ricerca, messaggi | no |
 | `tests/unit/test_renderer.py` | disegno del piano con un blocco di interfaccia finto, campi mancanti, dati guasti | no |
 | `tests/unit/test_selezione.py` | regole della scelta con oggetti finti: visibili, nascosti, bloccati, singoli e di gruppo | no |
-| `tests/blender/test_addon.py` | registrazione, comandi, dati veri della scena, vista, disposizioni dei pannelli e disegno dei pannelli | sì (Blender o modulo `bpy`) |
+| `tests/blender/test_addon.py` | registrazione, comandi, dimensioni e oggetti reali dei dieci modelli, isolamento/rimozione, dati della scena, vista e disegno dei pannelli | sì (Blender o modulo `bpy`) |
 
 `tests/supporto_finto.py` è il blocco di interfaccia finto: riceve le stesse chiamate che i pannelli
 farebbero a `bpy.types.UILayout`, le annota in un registro e non disegna nulla. Dentro Blender le
@@ -93,9 +94,11 @@ che cosa il pannello mostrerebbe e se i comandi, i campi e le icone esistono dav
 ## Prova visiva
 
 Avvia il programma, apri la barra laterale della Vista 3D con `N`, scegli **FormaFacile** e prova i
-cinque pannelli: crea una forma, sceglila e rinominala dall'elenco, nascondila e falla ricomparire,
-arrotondala e rispecchiala con gli strumenti guidati del pannello **Dai forma**, raggruppala e prova
-la guida della casetta,
+cinque pannelli semplici e il pannello tecnico che compare in modalità Completa. Nella **Libreria di
+oggetti** seleziona i modelli, leggi le descrizioni, cambia misure e colori, inserisci e rimuovi le
+parti controllando che gli oggetti precedenti restino invariati. Poi crea una forma, sceglila e
+rinominala dall'elenco, nascondila e falla ricomparire, arrotondala e rispecchiala con gli strumenti
+guidati del pannello **Dai forma**, raggruppala e prova la guida della casetta,
 spostala a passi, annulla e ripeti. Prova poi il cambio di modalità (Semplice/Completa), il
 ridimensionamento della finestra e un cambio di disposizione dei pannelli. L'elenco completo delle
 verifiche manuali è in `docs/LIMITAZIONI.md` e in `docs/REVISIONE_UX.md`.

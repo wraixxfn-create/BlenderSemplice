@@ -34,12 +34,13 @@ import formafacile_3d as componente  # noqa: E402
 import supporto_finto  # noqa: E402
 from formafacile_3d import comandi, configuration  # noqa: E402
 from formafacile_3d.blender import allineamento  # noqa: E402
+from formafacile_3d.blender import asset_library as servizio_libreria  # noqa: E402
 from formafacile_3d.blender import modificatori  # noqa: E402
 from formafacile_3d.blender import oggetti as servizio_oggetti  # noqa: E402
 from formafacile_3d.blender import raccolte  # noqa: E402
 from formafacile_3d.blender import selezione, vista as servizio_vista  # noqa: E402
 from formafacile_3d.localization import TESTI  # noqa: E402
-from formafacile_3d.scene import guide, messaggi, nomi, primitives, stato  # noqa: E402
+from formafacile_3d.scene import guide, libreria, messaggi, nomi, primitives, stato  # noqa: E402
 from formafacile_3d.ui import icone, panel, piano as piano_ui, renderer, vista as vista_ui  # noqa: E402
 
 
@@ -264,7 +265,7 @@ def prova_registrazione() -> None:
 
     pannelli = classi_registrate(bpy.types.Panel)
     testate = classi_registrate(bpy.types.Header)
-    verifica(len(pannelli) == 5, f"pannelli registrati: {len(pannelli)}")
+    verifica(len(pannelli) == 6, f"pannelli registrati: {len(pannelli)}")
     verifica(len(testate) == 1, "la testata con il pulsante FormaFacile è registrata")
     for classe in (*pannelli, *testate):
         verifica(classe.bl_space_type == "VIEW_3D", f"{classe.__name__} vive nella Vista 3D")
@@ -369,6 +370,213 @@ def prova_creazione() -> None:
     esito = esegui(comandi.ID_AGGIUNGI_CUBO)
     verifica("FINISHED" in esito, "in modalità completa la creazione funziona ugualmente")
     bpy.context.scene.formafacile.modalita = configuration.MODALITA_SEMPLICE
+
+
+# ---------------------------------------------------------- libreria di modelli
+
+
+def _asset_oggetto(raccolta_asset, finale: str):
+    """Trova una parte della raccolta per il finale del suo nome italiano."""
+    return next(
+        (oggetto for oggetto in raccolta_asset.objects if oggetto.name.endswith(f" - {finale}")),
+        None,
+    )
+
+
+def _controlla_dimensioni_asset(oggetto, attese, descrizione: str) -> None:
+    """Controlla le dimensioni geometriche dopo aver aggiornato la scena."""
+    bpy.context.view_layer.update()
+    ottenute = tuple(float(valore) for valore in oggetto.dimensions)
+    verifica(
+        all(abs(ottenuta - attesa) < 0.015 for ottenuta, attesa in zip(ottenute, attese)),
+        f"{descrizione}: dimensioni {tuple(round(v, 3) for v in ottenute)}",
+    )
+
+
+def prova_libreria_asset() -> None:
+    """Genera, misura, seleziona e rimuove ogni modello con geometria reale."""
+    conteggi = {
+        libreria.ASSET_TAVOLINO: 5,
+        libreria.ASSET_SCAFFALE: 8,
+        libreria.ASSET_SEDIA: 6,
+        libreria.ASSET_PIEDISTALLO: 3,
+        libreria.ASSET_VASO: 1,
+        libreria.ASSET_INSEGNA: 2,
+        libreria.ASSET_STANZA: 3,
+        libreria.ASSET_PEDANA: 2,
+        libreria.ASSET_SET_FOTOGRAFICO: 5,
+        libreria.ASSET_FORMA_STAMPA: 4,
+    }
+    for scheda in libreria.SCHEDE:
+        azzera_scena()
+        bpy.ops.mesh.primitive_cube_add(size=1.0, location=(100.0, 100.0, 0.0))
+        preesistente = bpy.context.object
+        preesistente.name = "Cubo preesistente"
+        posizione_precedente = tuple(float(v) for v in preesistente.location)
+        dimensioni_precedenti = tuple(float(v) for v in preesistente.dimensions)
+        geometria_precedente = preesistente.data
+        materiale_preesistente = bpy.data.materials.new("Materiale preesistente")
+        materiale_preesistente.diffuse_color = (0.1, 0.2, 0.3, 1.0)
+        preesistente.data.materials.append(materiale_preesistente)
+        colore_precedente = tuple(float(v) for v in materiale_preesistente.diffuse_color)
+
+        stato_asset = bpy.context.scene.formafacile
+        stato_asset.asset_selezionato = scheda.identificatore
+        if scheda.identificatore == libreria.ASSET_TAVOLINO:
+            stato_asset.asset_colore = (0.2, 0.4, 0.6, 1.0)
+        esito = esegui(comandi.ID_AGGIUNGI_ASSET)
+        verifica(
+            esito is not None and "FINISHED" in esito,
+            f"il modello {scheda.nome} viene inserito senza errori",
+        )
+        raccolta_asset = next(
+            (voce for voce in bpy.data.collections
+             if voce.get(TESTI["ASSET_PROPRIETA_MODELLO"]) == scheda.nome),
+            None,
+        )
+        verifica(raccolta_asset is not None, f"{scheda.nome}: raccolta dedicata presente")
+        parti = tuple(raccolta_asset.objects)
+        verifica(
+            len(parti) == conteggi[scheda.identificatore],
+            f"{scheda.nome}: numero di parti previsto ({len(parti)})",
+        )
+        verifica(
+            all(oggetto.data is not None and oggetto.type in {"MESH", "FONT", "LIGHT"} for oggetto in parti),
+            f"{scheda.nome}: la raccolta contiene oggetti Blender reali",
+        )
+        verifica(
+            all(len(oggetto.data.vertices) > 0 and len(oggetto.data.polygons) > 0
+                for oggetto in parti if oggetto.type == "MESH"),
+            f"{scheda.nome}: ogni parte mesh ha vertici e facce",
+        )
+        verifica(
+            all(oggetto.data.materials for oggetto in parti if oggetto.type == "MESH"),
+            f"{scheda.nome}: ogni parte mesh ha il materiale regolabile scelto",
+        )
+        verifica(
+            all(oggetto.data.materials[0] is not materiale_preesistente
+                for oggetto in parti if oggetto.type == "MESH"),
+            f"{scheda.nome}: il colore usa un materiale indipendente dagli oggetti precedenti",
+        )
+        verifica(
+            bool(raccolta_asset.get(TESTI["ASSET_PROPRIETA_PARAMETRI"])),
+            f"{scheda.nome}: i parametri di partenza restano leggibili sulla raccolta",
+        )
+        if scheda.identificatore == libreria.ASSET_TAVOLINO:
+            colore_creato = tuple(float(v) for v in parti[0].data.materials[0].diffuse_color)
+            verifica(
+                all(abs(a - b) < 1e-5 for a, b in zip(colore_creato, (0.2, 0.4, 0.6, 1.0))),
+                "il colore scelto viene applicato al materiale del tavolino",
+            )
+        verifica(
+            all(oggetto.name.startswith(raccolta_asset.name + " - ") for oggetto in parti),
+            f"{scheda.nome}: i nomi delle parti sono chiari e raggruppati",
+        )
+        verifica(
+            sorted(scelti()) == sorted(oggetto.name for oggetto in parti),
+            f"{scheda.nome}: dopo l'inserimento sono scelte tutte e sole le sue parti",
+        )
+        messaggio_asset = (
+            TESTI["MESSAGGIO_ASSET_AGGIUNTO_UNO"].format(nome=scheda.nome)
+            if len(parti) == 1
+            else TESTI["MESSAGGIO_ASSET_AGGIUNTO"].format(
+                nome=scheda.nome, numero=len(parti)
+            )
+        )
+        verifica(
+            bpy.context.scene.formafacile.messaggio == messaggio_asset,
+            f"{scheda.nome}: messaggio di inserimento in italiano",
+        )
+
+        if scheda.identificatore == libreria.ASSET_TAVOLINO:
+            _controlla_dimensioni_asset(_asset_oggetto(raccolta_asset, TESTI["ASSET_PARTE_PIANO"]),
+                                        (1.2, 0.7, 0.06), "Piano del tavolino")
+        elif scheda.identificatore == libreria.ASSET_SCAFFALE:
+            _controlla_dimensioni_asset(_asset_oggetto(raccolta_asset, TESTI["ASSET_PARTE_FIANCO_SINISTRO"]),
+                                        (0.04, 0.35, 2.0), "Fianco dello scaffale")
+        elif scheda.identificatore == libreria.ASSET_SEDIA:
+            _controlla_dimensioni_asset(_asset_oggetto(raccolta_asset, TESTI["ASSET_PARTE_SEDUTA"]),
+                                        (0.45, 0.5, 0.045), "Seduta della sedia")
+        elif scheda.identificatore == libreria.ASSET_PIEDISTALLO:
+            _controlla_dimensioni_asset(_asset_oggetto(raccolta_asset, TESTI["ASSET_PARTE_TOP"]),
+                                        (0.8, 0.8, 0.08), "Piano del piedistallo")
+        elif scheda.identificatore == libreria.ASSET_VASO:
+            _controlla_dimensioni_asset(parti[0], (0.4, 0.4, 0.5), "Vaso cavo")
+            verifica(
+                len(parti[0].data.polygons) >= 48 * 10,
+                "il vaso è una superficie cava a profilo, non un'immagine o un segnaposto",
+            )
+        elif scheda.identificatore == libreria.ASSET_INSEGNA:
+            pannello_asset = _asset_oggetto(raccolta_asset, TESTI["ASSET_PARTE_PANNELLO"])
+            scritta_asset = _asset_oggetto(raccolta_asset, TESTI["ASSET_PARTE_TESTO"])
+            _controlla_dimensioni_asset(pannello_asset, (1.2, 0.06, 0.6), "Pannello dell'insegna")
+            verifica(scritta_asset.type == "FONT" and scritta_asset.data.extrude > 0.0,
+                     "la scritta è testo 3D estruso e resta modificabile")
+            verifica(scritta_asset.data.body == "CIAO", "l'insegna usa il testo scelto")
+        elif scheda.identificatore == libreria.ASSET_STANZA:
+            _controlla_dimensioni_asset(_asset_oggetto(raccolta_asset, TESTI["ASSET_PARTE_PAVIMENTO"]),
+                                        (4.0, 4.0, 0.12), "Pavimento della stanza")
+        elif scheda.identificatore == libreria.ASSET_PEDANA:
+            verifica(all(oggetto.type == "MESH" for oggetto in parti), "la pedana è fatta di mesh solide")
+            _controlla_dimensioni_asset(_asset_oggetto(raccolta_asset, TESTI["ASSET_PARTE_PEDANA"]),
+                                        (1.2, 1.2, 0.0912), "Base della pedana")
+        elif scheda.identificatore == libreria.ASSET_SET_FOTOGRAFICO:
+            verifica(sum(oggetto.type == "LIGHT" for oggetto in parti) == 3,
+                     "il set fotografico crea tre luci di area reali")
+            verifica(all(oggetto.data.type == "AREA" for oggetto in parti if oggetto.type == "LIGHT"),
+                     "le luci del set sono regolabili come luci di area")
+            _controlla_dimensioni_asset(_asset_oggetto(raccolta_asset, TESTI["ASSET_PARTE_PAVIMENTO"]),
+                                        (4.0, 3.5, 0.08), "Pavimento del set fotografico")
+        elif scheda.identificatore == libreria.ASSET_FORMA_STAMPA:
+            _controlla_dimensioni_asset(_asset_oggetto(raccolta_asset, TESTI["ASSET_PARTE_CUBO"]),
+                                        (0.5, 0.5, 0.5), "Cubo del set di stampa 3D")
+
+        verifica(
+            bpy.data.objects.get(preesistente.name) is preesistente
+            and tuple(float(v) for v in preesistente.location) == posizione_precedente
+            and tuple(float(v) for v in preesistente.dimensions) == dimensioni_precedenti
+            and preesistente.data is geometria_precedente
+            and preesistente.data.materials[0] is materiale_preesistente
+            and tuple(float(v) for v in materiale_preesistente.diffuse_color) == colore_precedente,
+            f"{scheda.nome}: oggetto e materiale preesistenti non vengono toccati",
+        )
+        verifica(
+            "FINISHED" in esegui("object.delete", use_global=False),
+            f"{scheda.nome}: le parti aggiunte si possono rimuovere con il comando normale",
+        )
+        verifica(
+            bpy.data.objects.get(preesistente.name) is preesistente
+            and preesistente.data is geometria_precedente
+            and preesistente.data.materials[0] is materiale_preesistente
+            and tuple(float(v) for v in materiale_preesistente.diffuse_color) == colore_precedente,
+            f"{scheda.nome}: la rimozione non danneggia gli oggetti precedenti",
+        )
+
+    # Una combinazione di misure incompatibile deve fallire prima di creare geometrie.
+    azzera_scena()
+    bpy.ops.mesh.primitive_cube_add(size=1.0, location=(50.0, 50.0, 0.0))
+    preesistente = bpy.context.object
+    stato_asset = bpy.context.scene.formafacile
+    stato_asset.asset_selezionato = libreria.ASSET_TAVOLINO
+    stato_asset.asset_larghezza = 0.05
+    stato_asset.asset_profondita = 0.05
+    stato_asset.asset_spessore = 0.2
+    nomi_precedenti = set(nomi_scena())
+    esito = esegui(comandi.ID_AGGIUNGI_ASSET)
+    verifica(esito is not None and "CANCELLED" in esito,
+             "misure incompatibili fermano la creazione senza eccezioni")
+    verifica(set(nomi_scena()) == nomi_precedenti and preesistente.name in nomi_scena(),
+             "un errore di misura non aggiunge né rimuove oggetti")
+    verifica(messaggio() == TESTI["ERRORE_ASSET_PARAMETRI"],
+             "l'errore delle misure è spiegato in italiano")
+
+    stato_asset.asset_selezionato = libreria.ASSET_INSEGNA
+    stato_asset.asset_testo = ""
+    esito = esegui(comandi.ID_AGGIUNGI_ASSET)
+    verifica(esito is not None and "CANCELLED" in esito,
+             "l'insegna non viene creata con il testo vuoto")
+    verifica(messaggio() == TESTI["ERRORE_ASSET_TESTO_VUOTO"],
+             "l'errore del testo vuoto è chiaro e in italiano")
 
 
 # --------------------------------------------------------------------- scelta
@@ -1465,6 +1673,7 @@ def prova_pannelli() -> None:
     for chiave, classe in (
         ("principale", panel.FORMAFACILE_PT_principale),
         ("scena", panel.FORMAFACILE_PT_scena),
+        ("libreria", panel.FORMAFACILE_PT_libreria),
         ("oggetto", panel.FORMAFACILE_PT_oggetto),
         ("modella", panel.FORMAFACILE_PT_modella),
     ):
@@ -1476,6 +1685,7 @@ def prova_pannelli() -> None:
     for classe, chiave_testo in (
         (panel.FORMAFACILE_PT_principale, "TITOLO_PANNELLO_PRINCIPALE"),
         (panel.FORMAFACILE_PT_scena, "TITOLO_PANNELLO_SCENA"),
+        (panel.FORMAFACILE_PT_libreria, "TITOLO_PANNELLO_LIBRERIA"),
         (panel.FORMAFACILE_PT_oggetto, "TITOLO_PANNELLO_OGGETTO"),
         (panel.FORMAFACILE_PT_modella, "TITOLO_PANNELLO_MODELLA"),
         (panel.FORMAFACILE_PT_completo, "TITOLO_PANNELLO_COMPLETO"),
@@ -2564,6 +2774,7 @@ def main() -> int:
     try:
         prova_registrazione()
         prova_creazione()
+        prova_libreria_asset()
         prova_scelta()
         prova_rinomina()
         prova_visibilita()

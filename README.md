@@ -25,9 +25,11 @@ python3 scripts/avvia_formafacile.py --blender "/percorso/al/programma/blender"
 
 In alternativa imposta la variabile d'ambiente `FORMAFACILE_BLENDER` oppure configura il file `config.ini` nella cartella di configurazione utente di FormaFacile 3D. Il programma di avvio cerca Blender nel `PATH`, nelle posizioni standard del sistema e nelle impostazioni esplicite; non dipende da un percorso personale fissato nel codice.
 
-All'avvio viene registrato il componente aggiuntivo dalla copia del repository. Nella Vista 3D apri la barra laterale con `N` e scegli la scheda **FormaFacile**: trovi cinque pannelli — **Azioni principali**, **La mia scena**, **Oggetto scelto**, **Dai forma** e, nella modalità completa, **Comandi di Blender**.
+All'avvio viene registrato il componente aggiuntivo dalla copia del repository. Nella Vista 3D apri la barra laterale con `N` e scegli la scheda **FormaFacile**: trovi cinque pannelli in modalità Semplice — **Azioni principali**, **La mia scena**, **Libreria di oggetti**, **Oggetto scelto** e **Dai forma** — e un sesto pannello tecnico, **Comandi di Blender**, nella modalità completa.
 
 Nelle **Azioni principali** si creano **Cubo**, **Sfera**, **Cilindro**, **Cono**, **Piano**, **Ciambella**, **Testo** e **Luce**, con la grandezza regolabile da un solo campo; si annulla e si ripete, si torna alla vista iniziale e si inquadra la scena. In **La mia scena** c'è l'elenco degli oggetti: si sceglie per nome (anche con più oggetti), si rinomina, si nasconde, si blocca la scelta con il lucchetto e si cerca. Il pannello **Oggetto scelto** cambia con la scelta: sposta, ruota e ingrandisce a passi oppure con i campi numerici di posizione, rotazione e dimensione (con l'unità della scena); attiva le frecce, gli archi e i cubetti per lavorare con il mouse; porta al centro, appoggia sul piano, copia, incolla, duplica, elimina, inquadra l'oggetto, cambia la potenza della luce o guarda la scena dalla telecamera. Ogni azione lascia un messaggio breve in italiano e tutte le azioni che cambiano i dati si annullano con `Ctrl+Z`, perché usano la storia di Blender; i blocchi messi in Blender (asse bloccato, scelta bloccata) vengono sempre rispettati.
+
+La **Libreria di oggetti** parte con dieci modelli costruiti da geometria Blender, non da immagini: **Tavolino**, **Scaffale**, **Sedia stilizzata**, **Piedistallo**, **Vaso cavo**, **Insegna con scritta**, **Stanza semplice**, **Pedana circolare**, **Set fotografico** e **Forme per stampa 3D**. Scegli il modello per leggere la descrizione, regola le misure e il colore e premi **Aggiungi alla scena**. Ogni inserimento crea una raccolta indipendente con parti dai nomi italiani; il testo dell'insegna resta modificabile come testo estruso. Le descrizioni spiegano quali parti sono mesh statiche: le misure configurano la geometria iniziale, poi i pezzi si modificano in Modalità Modifica ma le misure non restano collegate ai controlli. La generazione usa solo codice e risorse già incluse in Blender, senza modelli di terzi. La libreria è stata verificata con prove automatiche in modalità senza schermo, non è ancora stata provata visivamente nella Vista 3D o con un'immagine finale.
 
 Nel pannello **Dai forma** ci sono gli strumenti guidati per ritoccare una forma senza parolone: **Ammorbidisci gli spigoli**, **Superficie liscia**, **Superficie a facce**, **Forma più arrotondata**, **Specchia**, **Ripeti le copie** (in fila o in cerchio), **Spessore della parete**, **Unisci o taglia** e **Trasforma in forma**. Ogni comando spiega prima che cosa farà, chiede solo i valori indispensabili (gli altri restano nella modalità completa), non cambia mai la forma di partenza — usa modifiche non applicate, che si tolgono tutte insieme con **Togli le modifiche** — e quando non può fare qualcosa lo dice, invece di fingere che sia riuscito. Accanto ci sono **Allinea**, **Spazia in modo uguale**, i **gruppi** (gli oggetti raccolti insieme si scelgono, si nascondono e si sciolgono con un clic) e la **guida passo passo**: **Inizia la guida** costruisce una casetta in 13 passi, dalla prima forma al gruppo finito, con **Indietro**, **Avanti**, **Esegui il passo** e **Chiudi**.
 
@@ -85,15 +87,15 @@ Su Windows, se Python è installato tramite Python Launcher, usa `py -3` al post
 ## Stato e limiti
 
 Questa è la prima interfaccia utilizzabile, verificata automaticamente con il modulo `bpy` senza
-schermo (oltre 3400 controlli) e con 207 prove di unità; **non è ancora stata provata su uno schermo**,
+schermo (3685 controlli) e con 214 prove di unità; **non è ancora stata provata su uno schermo**,
 perché nell'ambiente di sviluppo non è installata una distribuzione Blender grafica. Restano da
 provare a mano disegno dei pannelli, suggerimenti, ridimensionamento, navigazione con il mouse,
 trascinamento delle maniglie e annullamento interattivo: la checklist da seguire è in
 `docs/VERIFICA_MANUALE.md` e l'elenco dei limiti in `docs/LIMITAZIONI.md`.
 
-Non sono ancora presenti materiali e colori semplificati, sfondo, anteprima e immagine finale,
+Non sono ancora presenti strumenti generali per materiali, colori, sfondi, anteprima e immagine finale,
 animazione, gerarchia fra oggetti, importazione ed esportazione, altre guide passo passo oltre a quella
-della casetta e assistente locale. Non ci sono pulsanti fittizi per queste funzioni. I pannelli non rimpiazzano la schermata
+della casetta e assistente locale. Colori, fondale e luci si configurano soltanto nei modelli della libreria. Non ci sono pulsanti fittizi per queste funzioni. I pannelli non rimpiazzano la schermata
 iniziale né la disposizione standard di Blender.
 
 Consulta `docs/ARCHITETTURA.md` per il piano, `docs/LIMITAZIONI.md` per i limiti verificati,

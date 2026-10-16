@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from . import primitives, stato
+from . import libreria, primitives, stato
 from .stato import CLASSI, registra_stato, rimuovi_stato
 
-__all__ = ["CLASSI", "primitives", "registra_stato", "rimuovi_stato", "stato"]
+__all__ = ["CLASSI", "libreria", "primitives", "registra_stato", "rimuovi_stato", "stato"]

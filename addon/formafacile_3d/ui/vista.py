@@ -12,9 +12,10 @@ from ..blender import modificatori as servizio_modificatori
 from ..blender import raccolte as servizio_raccolte
 from ..blender import selezione
 from ..blender import vista as servizio_vista
-from ..scene import misure
+from ..scene import libreria, misure
 from ..scene.stato import (
     grandezza_della_scena,
+    stato_della_scena,
     guida_della_scena,
     messaggio_della_scena,
     modalita_della_scena,
@@ -34,6 +35,13 @@ def raccogli_contesto(context) -> tuple[Contesto, dict[str, object]]:
     risolutore: dict[str, object] = {}
     if scena is not None:
         risolutore[configuration.CHIAVE_SCENA] = scena
+    stato = stato_della_scena(scena)
+    if stato is not None:
+        risolutore[configuration.CHIAVE_STATO] = stato
+    asset_selezionato = str(
+        getattr(stato, "asset_selezionato", libreria.ID_PREDEFINITO)
+    )
+    asset_descrizione = libreria.scheda(asset_selezionato).descrizione
 
     if vettore is not None:
         attivo = vettore.objects.active
@@ -63,6 +71,8 @@ def raccogli_contesto(context) -> tuple[Contesto, dict[str, object]]:
         unita_lunghezza=_unita_lunghezza(scena),
         unita_angolo=_unita_angolo(scena),
         grandezza_forma=grandezza_della_scena(scena),
+        asset_selezionato=asset_selezionato,
+        asset_descrizione=asset_descrizione,
         raccolte=_raccolte(scena),
         modificatori=_modificatori(context, vettore),
         guida=guida,

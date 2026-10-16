@@ -7,13 +7,15 @@ semplici e quali invece restano**, con la ragione di ogni scelta.
 
 ## Che cosa vede un principiante
 
-Nella barra laterale della Vista 3D (tasto `N`) compare la scheda **FormaFacile**, con quattro
-pannelli:
+Nella barra laterale della Vista 3D (tasto `N`) compare la scheda **FormaFacile**, con cinque
+pannelli in modalità Semplice e il sesto pannello tecnico nella modalità Completa:
 
 | Pannello | Che cosa contiene | Perché è lì |
 | --- | --- | --- |
 | **Azioni principali** | gruppi *Costruisci* (Cubo, Sfera, Cilindro, Cono, Piano, Ciambella, Testo, Luce, con il campo *Grandezza*), *Annulla e ripeti*, *Guarda la scena* (Torna alla vista iniziale, Inquadra tutto), *Consigli*, e la riga del messaggio appena successo | sono le azioni che si cercano per prime; Undo e Redo stanno sempre a portata, anche a scena vuota |
 | **La mia scena** | conteggio in parole ("3 oggetti, 1 scelto"), ricerca per nome quando gli oggetti sono più di otto, *Tutti*, *Nessuno*, *Inverti*, *Stesso tipo*, elenco con una riga per oggetto | sostituisce l'elenco oggetti di Blender senza la sua gerarchia tecnica: qui si sceglie, si rinomina e si nasconde |
+| **Libreria di oggetti** | dieci modelli geometrici; selezione, descrizione, campi di misura e colore, pulsante per inserire una raccolta nuova | mostra prima le dimensioni e il tipo di geometria; dichiara quali parti sono geometrie statiche dopo la creazione |
+| **Dai forma** | strumenti guidati, modifiche non applicate, gruppi e guida passo passo | presenta i comandi di ritocco in parole semplici |
 | **Oggetto scelto** | si adatta alla scelta: nessuna scelta, un oggetto, più oggetti | è il pannello che risponde alla domanda "che cosa posso fare adesso?" |
 | **Comandi di Blender** | solo nella modalità **Completa**: nome dei dati, posizione, rotazione, dimensione, aspetto, blocco della scelta, nascondi nell'immagine finale, potenza della luce | chi vuole il controllo fine lo trova, ma non lo incontra per caso |
 
@@ -132,7 +134,7 @@ Nessun controllo automatico può guardare uno schermo. La checklist completa, di
 argomento, sta in `docs/VERIFICA_MANUALE.md`. In sintesi, in Blender 4.5.x grafico vanno ancora
 provati a mano:
 
-1. la scheda **FormaFacile** nella barra laterale, con i suoi cinque pannelli;
+1. la scheda **FormaFacile** nella barra laterale, con i cinque pannelli semplici e il pannello tecnico visibile solo in modalità Completa;
 2. il passaggio fra **Semplice** e **Completa** e la chiusura del pannello tecnico;
 3. il passaggio del mouse sui pulsanti per leggere i suggerimenti;
 4. `Ctrl+Z` e `Ctrl+Maiusc+Z` dopo una creazione, una rinomina e un nascondimento;

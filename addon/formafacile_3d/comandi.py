@@ -16,6 +16,7 @@ ID_AGGIUNGI_PIANO = "formafacile.aggiungi_piano"
 ID_AGGIUNGI_TORO = "formafacile.aggiungi_toro"
 ID_AGGIUNGI_TESTO = "formafacile.aggiungi_testo"
 ID_AGGIUNGI_LUCE = "formafacile.aggiungi_luce"
+ID_AGGIUNGI_ASSET = "formafacile.aggiungi_asset"
 
 # Scelta degli oggetti.
 ID_SCEGLI_TUTTO = "formafacile.scegli_tutto"
