@@ -33,9 +33,9 @@ Riferimenti ufficiali consultati, fissati al sorgente Blender 4.5.14:
 - `addon/formafacile_3d/localization.py`: unica risorsa dei testi italiani usati dall'interfaccia, dal programma di avvio e dai messaggi dei controlli.
 - `addon/formafacile_3d/configuration.py`: valori predefiniti (passo, angolo, fattori, limiti dell'elenco, dimensioni minime, vista iniziale) e scelta della lingua italiana nella sessione corrente, senza salvare le preferenze globali.
 - `addon/formafacile_3d/comandi.py`: unico punto in cui sono scritti gli identificatori dei comandi e i valori degli enumerati (direzioni, versi di rotazione, versi della dimensione, modi di scelta).
-- `addon/formafacile_3d/operators/`: traduce le interazioni dell'interfaccia in operatori Blender annullabili: `scene.py` (creazione), `selezione.py` (scelta), `oggetti.py` (rinomina, duplica, elimina, visibilità, inquadratura, telecamera), `trasformazioni.py` (passi), `vista.py` (vista iniziale, inquadrature, annulla e ripeti, ricerca), `base.py` (parti comuni).
-- `addon/formafacile_3d/scene/`: servizi di scena: `primitives.py` (forme e nomi italiani), `nomi.py` (pulizia dei nomi scritti a mano), `stato.py` (modalità, passo, ricerca e messaggio salvati nella scena), `messaggi.py` (messaggi brevi e barra di stato).
-- `addon/formafacile_3d/blender/`: adattatore minimo che invoca le API pubbliche di Blender, isolandole dai servizi e dall'interfaccia: `adapter.py` (creazione nativa), `selezione.py` (regole della scelta), `oggetti.py` (dati degli oggetti), `trasformazioni.py` (formule dei passi), `vista.py` (vista iniziale e inquadrature).
+- `addon/formafacile_3d/operators/`: traduce le interazioni dell'interfaccia in operatori Blender annullabili: `scene.py` (creazione e strumenti con le maniglie), `selezione.py` (scelta), `oggetti.py` (rinomina, duplica, elimina, visibilità, blocco della scelta, copia e incolla, telecamera), `trasformazioni.py` (passi, centramento e appoggio), `vista.py` (vista iniziale, inquadrature, annulla e ripeti, ricerca), `base.py` (parti comuni, fra cui il ripristino dell'oggetto attivo).
+- `addon/formafacile_3d/scene/`: servizi di scena: `primitives.py` (forme e nomi italiani), `misure.py` (unità, conversioni e regole dei blocchi, senza Blender), `nomi.py` (pulizia dei nomi scritti a mano), `stato.py` (modalità, passo, grandezza, ricerca e messaggio salvati nella scena), `messaggi.py` (messaggi brevi e barra di stato).
+- `addon/formafacile_3d/blender/`: adattatore minimo che invoca le API pubbliche di Blender, isolandole dai servizi e dall'interfaccia: `adapter.py` (creazione nativa), `selezione.py` (regole della scelta), `oggetti.py` (dati degli oggetti e blocco della scelta), `trasformazioni.py` (formule dei passi e delle posizioni precise, con il rispetto dei blocchi), `vista.py` (vista iniziale, inquadrature, esecuzione di comandi nativi nel contesto di una Vista 3D e attivazione degli strumenti con le maniglie).
 - `addon/formafacile_3d/ui/`: pannelli Blender e regole dell'interfaccia: `modello.py`, `piano.py`, `renderer.py`, `vista.py` (lettura della scena), `icone.py` (nomi delle icone verificate), `panel.py` (quattro pannelli e il pulsante nella testata).
 - `addon/formafacile_3d/logging_service.py`: messaggi diagnostici essenziali sulla console; non registra prompt, nomi di file o contenuti della scena.
 - `scripts/controlla.py`: verifica file, sintassi, manifesto e test unitari; con `--test-bpy` esegue le prove con il modulo `bpy` senza schermo e con `--test-blender` le esegue con una distribuzione Blender completa.
@@ -43,6 +43,7 @@ Riferimenti ufficiali consultati, fissati al sorgente Blender 4.5.14:
 - `scripts/crea_pacchetto.py`: prepara un archivio installabile dell'estensione usando la libreria standard.
 - `tests/supporto_finto.py`: blocco di interfaccia finto; registra le chiamate che i pannelli farebbero a `bpy.types.UILayout`, così le regole dell'interfaccia si verificano anche senza Blender.
 - `docs/REVISIONE_UX.md`: revisione dei termini italiani sostituiti e di quelli mantenuti, con le ragioni e le verifiche manuali richieste.
+- `docs/VERIFICA_MANUALE.md`: checklist della verifica a mano con Blender grafico: pannelli, maniglie, mouse, campi numerici e annullamento interattivo.
 
 ## Ciclo di vita previsto
 
@@ -56,7 +57,7 @@ Riferimenti ufficiali consultati, fissati al sorgente Blender 4.5.14:
 ## Sequenza della prima versione utilizzabile
 
 1. **Scheletro iniziale (fatto):** programma di avvio con controllo della versione, metadati dell'estensione, interfaccia italiana iniziale, diagnostica e un'azione verificabile.
-2. **Creazione e modifica (fatto):** forme affidabili, selezione, spostamento, rotazione, scala, duplicazione, rinomina, visibilità, eliminazione, passo regolabile e annullamento.
+2. **Creazione e modifica (fatto):** forme affidabili (cubo, sfera, cilindro, cono, piano, ciambella, testo e luce) con grandezza regolabile, selezione, spostamento, rotazione e scala a passi e con campi numerici, maniglie per il mouse, centramento, appoggio sul piano, blocco della scelta, copia e incolla, duplicazione, rinomina, visibilità, eliminazione, rispetto dei blocchi di Blender e annullamento.
 3. **Risultato visivo (prossima fase):** materiali semplificati, sfondo, anteprima, immagine finale e progetto `.blend` salvabile e riapribile con un flusso dedicato. Luce, telecamera e impostazione della telecamera principale esistono già come comandi.
 4. **Apprendimento guidato (parziale):** i controlli contestuali e la modalità principiante/avanzata ci sono; mancano scene iniziali, flussi brevi e gerarchia semplificata.
 5. **Scambio di file:** importazione ed esportazione solo per formati effettivamente provati sulla versione supportata.
@@ -81,7 +82,7 @@ Non si introduce un'applicazione desktop separata, un motore 3D alternativo, un 
 | Struttura e sintassi | File richiesti, manifesto TOML e compilazione sintattica dei file Python | Automatizzato con `scripts/controlla.py` |
 | Localizzazione | Risorsa italiana centrale, assenza di segnaposto inglesi noti e testi UI non incorporati nel codice dei pannelli | Automatizzato; resta necessaria revisione umana |
 | Integrazione Blender | Registrazione, chiamata dell'operatore, creazione della mesh e rinomina dell'oggetto | `python3 scripts/controlla.py --test-blender`; richiede Blender 4.5.x completo |
-| Interfaccia manuale | Avvio, lingua italiana, pannello, pulsante, annullamento, ridimensionamento e lettura a diverse scale | Da eseguire in Blender grafico 4.5.x |
+| Interfaccia manuale | Avvio, lingua italiana, pannello, pulsante, maniglie, mouse, campi numerici, annullamento, ridimensionamento e lettura a diverse scale | Da eseguire in Blender grafico 4.5.x, con la checklist di `docs/VERIFICA_MANUALE.md` |
 | Pacchetto | Creazione dell’archivio ZIP e inclusione manifesto/licenze; installazione da disco, attivazione e disinstallazione | Creazione verificata con test unitario; installazione grafica ancora da provare |
 
 ## Decisioni

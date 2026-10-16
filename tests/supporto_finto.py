@@ -25,14 +25,18 @@ PACCHETTO = ROOT / "addon" / "formafacile_3d"
 
 
 def prepara_import_puro() -> None:
-    """Rende importabili `formafacile_3d.ui.*` senza Blender.
+    """Rende importabili `formafacile_3d.ui.*` e `formafacile_3d.scene.misure` senza Blender.
 
     Il pacchetto principale viene sostituito da un contenitore vuoto: serve solo
-    a far funzionare gli import relativi dei moduli puri dell'interfaccia.
+    a far funzionare gli import relativi dei moduli puri dell'interfaccia. Anche
+    `scene` viene sostituito, così si può importare `scene.misure` (regole di
+    misure e blocchi, senza Blender) senza eseguire `scene/__init__.py`, che
+    invece carica i servizi che richiedono `bpy`.
     """
     for nome, percorso in (
         ("formafacile_3d", PACCHETTO),
         ("formafacile_3d.ui", PACCHETTO / "ui"),
+        ("formafacile_3d.scene", PACCHETTO / "scene"),
     ):
         if nome in sys.modules:
             continue

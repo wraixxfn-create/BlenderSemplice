@@ -12,7 +12,7 @@ pannelli:
 
 | Pannello | Che cosa contiene | Perché è lì |
 | --- | --- | --- |
-| **Azioni principali** | gruppi *Costruisci* (Cubo, Sfera, Cilindro, Piano, Luce), *Annulla e ripeti*, *Guarda la scena* (Torna alla vista iniziale, Inquadra tutto), *Consigli*, e la riga del messaggio appena successo | sono le azioni che si cercano per prime; Undo e Redo stanno sempre a portata, anche a scena vuota |
+| **Azioni principali** | gruppi *Costruisci* (Cubo, Sfera, Cilindro, Cono, Piano, Ciambella, Testo, Luce, con il campo *Grandezza*), *Annulla e ripeti*, *Guarda la scena* (Torna alla vista iniziale, Inquadra tutto), *Consigli*, e la riga del messaggio appena successo | sono le azioni che si cercano per prime; Undo e Redo stanno sempre a portata, anche a scena vuota |
 | **La mia scena** | conteggio in parole ("3 oggetti, 1 scelto"), ricerca per nome quando gli oggetti sono più di otto, *Tutti*, *Nessuno*, *Inverti*, *Stesso tipo*, elenco con una riga per oggetto | sostituisce l'elenco oggetti di Blender senza la sua gerarchia tecnica: qui si sceglie, si rinomina e si nasconde |
 | **Oggetto scelto** | si adatta alla scelta: nessuna scelta, un oggetto, più oggetti | è il pannello che risponde alla domanda "che cosa posso fare adesso?" |
 | **Comandi di Blender** | solo nella modalità **Completa**: nome dei dati, posizione, rotazione, dimensione, aspetto, blocco della scelta, nascondi nell'immagine finale, potenza della luce | chi vuole il controllo fine lo trova, ma non lo incontra per caso |
@@ -29,7 +29,7 @@ nomi di funzioni.
 
 | In Blender o nel codice | In FormaFacile | Perché |
 | --- | --- | --- |
-| `Add Mesh` → `Cube`, `UV Sphere`, `Cylinder`, `Plane`; `Add Light` | **Cubo**, **Sfera**, **Cilindro**, **Piano**, **Luce** | il nome della forma basta: "primitive" e "mesh" non aggiungono nulla a chi comincia |
+| `Add Mesh` → `Cube`, `UV Sphere`, `Cylinder`, `Cone`, `Plane`, `Torus`; `Add Text`; `Add Light` | **Cubo**, **Sfera**, **Cilindro**, **Cono**, **Piano**, **Ciambella**, **Testo**, **Luce** | il nome della forma basta: "primitive" e "mesh" non aggiungono nulla a chi comincia; "Ciambella" è più immediata di "toro", che in italiano dice altro |
 | `Object`, `Empty` (come *tipo* di oggetto) | **Forma**, **Oggetto** | "Forma" è la parola che un principiante usa; il tipo tecnico compare solo nel pannello dei comandi di Blender |
 | `Object Mode` / `Edit Mode` | **modalità Oggetto** / **modalità Modifica** | sono due parole già italiane: cambiano solo l'ordine, e la frase "Prima torna alla modalità Oggetto con Tab." dice cosa fare |
 | `Hide in Viewport` / `Unhide` / icona a occhio | **Nascondi** / **Mostra** / **Mostra tutti gli oggetti** | l'occhio si capisce solo dopo averlo imparato; il verbo no |
@@ -37,7 +37,7 @@ nomi di funzioni.
 | `Select Grouped by Type` / `Select Same Type` | **Stesso tipo** | dice l'effetto, non il meccanismo |
 | `Frame All`, `Frame Selected`, `Zoom to Object` | **Inquadra tutto**, **Inquadra la scelta**, **Inquadra l'oggetto** | "frame" e "zoom to" non sono italiani e non dicono che cosa succede |
 | `Align View to Selected`, `Set Active Object as Camera`, `Camera View` | **Guarda dalla telecamera**, **Usa come telecamera principale** | "Guarda dalla telecamera" è l'effetto voluto; la seconda dice quando serve |
-| `Move` (`G`), `Rotate` (`R`), `Scale` (`S`) | **Sposta di poco**, **Ruota di poco**, **Ingrandisci o rimpicciolisci** con i pulsanti **Sinistra**, **Destra**, **Su**, **Giù**, **Avanti**, **Indietro**, **Gira a sinistra**, **Gira a destra**, **Più grande**, **Più piccolo** | niente lettere da memorizzare: ogni clic fa un passo definito, e il campo **Passo** mostra quanto |
+| `Move` (`G`), `Rotate` (`R`), `Scale` (`S`) | **Sposta di poco**, **Ruota di poco**, **Ingrandisci o rimpicciolisci** con i pulsanti **Sinistra**, **Destra**, **Su**, **Giù**, **Avanti**, **Indietro**, **Gira a sinistra**, **Gira a destra**, **Più grande**, **Più piccolo**; e i campi **Posizione**, **Rotazione**, **Dimensione** con l'unità della scena | niente lettere da memorizzare: ogni clic fa un passo definito, e chi vuole il numero esatto lo scrive, con l'unità scritta accanto |
 | `Axis X/Y/Z` | **Sinistra, destra, su, giù, avanti, indietro** | "asse X" richiede di immaginare gli assi; i punti di vista della stanza no |
 | `Outliner`, `Collection`, `Scene Collection` | **Oggetti della scena**, conteggio in parole, **gruppo** solo dove serve | l'elenco piatto è una scelta precisa: la gerarchia si aggiungerà quando ci sarà un motivo |
 | `Undo History`, `Redo` | **Annulla**, **Ripeti** (con il promemoria `Ctrl+Z` e `Ctrl+Maiusc+Z` nei suggerimenti) | due parole già italiane e già usate da ogni programma |
@@ -52,7 +52,13 @@ nomi di funzioni.
 - **Vista 3D, scena, oggetto, luce, telecamera, forma, modalità**: parole italiane di uso comune
   nel settore, già presenti nell'interfaccia tradotta di Blender; sostituirle creerebbe un
   vocabolario isolato.
-- **Annulla, Ripeti, Passo, Cerca, Elimina, Duplica, Visibilità**: termini brevi e comprensibili.
+- **Annulla, Ripeti, Passo, Cerca, Elimina, Duplica, Visibilità, Copia, Incolla**: termini brevi
+  e comprensibili.
+- **Maniglie, frecce, archi, cubetti**: sono le parole con cui la documentazione di Blender
+  descrive i gizmo; "maniglia" dice subito che cosa si trascina, e i pulsanti spiegano comunque
+  l'effetto (**Frecce per spostare**, **Frecce per ruotare**, **Frecce per ingrandire**).
+- **Piano di lavoro**: la griglia su cui poggiano gli oggetti; **Appoggia sul piano** dice
+  l'effetto meglio di "snap to ground" o "allinea al suolo".
 - **Tipo tecnico: `MESH`, `LIGHT`, `CAMERA`** e i campi tecnici dell'oggetto: compaiono **solo**
   nella modalità **Completa**, con un promemoria che lo dice ("Modalità completa: compaiono anche
   i comandi tecnici."). Chi vuole un ponte verso la documentazione di Blender lo trova; chi non lo
@@ -115,7 +121,8 @@ con Blender e con la sua documentazione.
 
 ## Verifica manuale ancora necessaria
 
-Nessun controllo automatico può guardare uno schermo. In Blender 4.5.x grafico vanno ancora
+Nessun controllo automatico può guardare uno schermo. La checklist completa, divisa per
+argomento, sta in `docs/VERIFICA_MANUALE.md`. In sintesi, in Blender 4.5.x grafico vanno ancora
 provati a mano:
 
 1. la scheda **FormaFacile** nella barra laterale, con i suoi quattro pannelli;

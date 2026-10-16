@@ -79,3 +79,68 @@ class OperatoreFormaFacile(bpy.types.Operator):
         """Avvisa che si deve prima uscire dalla modalità Modifica."""
         self.report({"WARNING"}, TESTI["ERRORE_CREAZIONE_IN_MODIFICA"])
         return {"CANCELLED"}
+
+    def richiedi_selezione(self, context=None) -> set[str]:
+        """Avvisa che serve una scelta, senza messaggi tecnici.
+
+        È il messaggio che chiunque capisce: non dice "nessun oggetto attivo",
+        dice cosa fare.
+        """
+        self.report({"WARNING"}, TESTI["ERRORE_NESSUNA_SCELTA"])
+        if context is not None:
+            self.annuncia(context, TESTI["ERRORE_NESSUNA_SCELTA"])
+        return {"CANCELLED"}
+
+    # ------------------------------------------------------------- contesto
+
+    def con_attivo_salvo(self, context) -> "SalvaAttivo":
+        """Restituisce un gestore che rimette a posto l'oggetto attivo.
+
+        Durante un comando si può perdere l'oggetto attivo (per esempio
+        eliminando o bloccando la scelta): chi comanda non deve ritrovarsi la
+        scena cambiata oltre a quello che ha chiesto.
+        """
+        return SalvaAttivo(context)
+
+    def annuncia_esito(
+        self, context, esito, singolare: str, plurale: str, nome: str = "", nota: str = ""
+    ) -> None:
+        """Scrive il messaggio giusto per una, molte o nessuna modifica."""
+        cambiati = esito.applicati
+        gia_a_posto = getattr(esito, "invariati", 0)
+        if cambiati == 0 and gia_a_posto:
+            # Erano già nella posizione richiesta: il messaggio lo dice senza
+            # far sembrare fallito il comando.
+            cambiati = gia_a_posto
+        if cambiati == 1 and nome:
+            testo = TESTI[singolare].format(nome=nome)
+        else:
+            testo = TESTI[plurale].format(numero=cambiati)
+        if getattr(esito, "bloccati", 0):
+            testo = f"{testo} {TESTI['AVVISO_TRASFORMAZIONE_PARZIALE'].format(numero=esito.bloccati)}"
+        if nota:
+            testo = f"{testo} {nota}"
+        self.annuncia(context, testo)
+
+
+class SalvaAttivo:
+    """Rimette l'oggetto attivo di prima, se esiste ancora."""
+
+    def __init__(self, context) -> None:
+        self._view_layer = getattr(context, "view_layer", None)
+        self._attivo = getattr(self._view_layer, "objects", None)
+        self._attivo = getattr(self._attivo, "active", None) if self._attivo else None
+
+    def __enter__(self) -> "SalvaAttivo":
+        return self
+
+    def __exit__(self, tipo, valore, traccia) -> bool:
+        if self._view_layer is None or self._attivo is None:
+            return False
+        try:
+            if self._attivo.name and self._attivo.name in bpy.data.objects:
+                if self._view_layer.objects.active is not self._attivo:
+                    self._view_layer.objects.active = self._attivo
+        except (AttributeError, ReferenceError, RuntimeError, TypeError, ValueError):
+            return False
+        return False

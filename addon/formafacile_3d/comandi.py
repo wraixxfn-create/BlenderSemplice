@@ -11,7 +11,10 @@ from __future__ import annotations
 ID_AGGIUNGI_CUBO = "formafacile.aggiungi_cubo"
 ID_AGGIUNGI_SFERA = "formafacile.aggiungi_sfera"
 ID_AGGIUNGI_CILINDRO = "formafacile.aggiungi_cilindro"
+ID_AGGIUNGI_CONO = "formafacile.aggiungi_cono"
 ID_AGGIUNGI_PIANO = "formafacile.aggiungi_piano"
+ID_AGGIUNGI_TORO = "formafacile.aggiungi_toro"
+ID_AGGIUNGI_TESTO = "formafacile.aggiungi_testo"
 ID_AGGIUNGI_LUCE = "formafacile.aggiungi_luce"
 
 # Scelta degli oggetti.
@@ -30,6 +33,16 @@ ID_ALTERNA_VISIBILITA = "formafacile.alterna_visibilita"
 ID_MOSTRA_TUTTI = "formafacile.mostra_tutti"
 ID_INQUADRA_OGGETTO = "formafacile.inquadra_oggetto"
 ID_INQUADRA_SCELTI = "formafacile.inquadra_scelti"
+ID_CENTRA = "formafacile.centra"
+ID_APPOGGIA_SUL_PIANO = "formafacile.appoggia_sul_piano"
+ID_BLOCCA_SCELTA = "formafacile.blocca_scelta"
+ID_COPIA = "formafacile.copia"
+ID_INCOLLA = "formafacile.incolla"
+
+# Strumenti con le maniglie nella Vista 3D (frecce, archi e cubetti).
+ID_STRUMENTO_SPOSTA = "formafacile.strumento_sposta"
+ID_STRUMENTO_RUOTA = "formafacile.strumento_ruota"
+ID_STRUMENTO_SCALA = "formafacile.strumento_scala"
 
 # Trasformazioni a passi.
 ID_SPOSTA_PASSO = "formafacile.sposta_passo"
@@ -62,6 +75,10 @@ ID_NATIVO_VIEW_CAMERA = "view3d.view_camera"
 ID_NATIVO_VIEW_CENTER_CAMERA = "view3d.view_center_camera"
 ID_NATIVO_ANNULLA = "ed.undo"
 ID_NATIVO_RIPETI = "ed.redo"
+ID_NATIVO_STRUMENTO = "wm.tool_set_by_id"
+ID_NATIVO_COPIA = "view3d.copybuffer"
+ID_NATIVO_INCOLLA = "view3d.pastebuffer"
+ID_NATIVO_ANNULLA_SPINTA = "ed.undo_push"
 
 # Direzioni dei passi: valori, etichette e spostamenti sugli assi.
 DIREZIONI = ("sinistra", "destra", "su", "giu", "avanti", "indietro")
@@ -103,3 +120,23 @@ AIUTI_DIMENSIONE = {"grande": "AIUTO_PIU_GRANDE", "piccolo": "AIUTO_PIU_PICCOLO"
 
 # Modi di scelta di un singolo oggetto dall'elenco.
 MODI_SCELTA = ("sostituisci", "aggiungi", "rimuovi")
+
+# Nomi dei comandi di creazione, nell'ordine in cui compaiono nel pannello.
+# Servono ai controlli automatici: ogni forma promessa deve esistere davvero.
+ID_FORME = (
+    ID_AGGIUNGI_CUBO,
+    ID_AGGIUNGI_SFERA,
+    ID_AGGIUNGI_CILINDRO,
+    ID_AGGIUNGI_CONO,
+    ID_AGGIUNGI_PIANO,
+    ID_AGGIUNGI_TORO,
+    ID_AGGIUNGI_TESTO,
+)
+
+# Comando nativo richiamato da ogni strumento con le maniglie, e messaggio
+# mostrato quando le frecce sono attive.
+STRUMENTI = {
+    ID_STRUMENTO_SPOSTA: ("builtin.move", "MESSAGGIO_STRUMENTO_SPOSTA"),
+    ID_STRUMENTO_RUOTA: ("builtin.rotate", "MESSAGGIO_STRUMENTO_RUOTA"),
+    ID_STRUMENTO_SCALA: ("builtin.scale", "MESSAGGIO_STRUMENTO_SCALA"),
+}

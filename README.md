@@ -27,14 +27,14 @@ In alternativa imposta la variabile d'ambiente `FORMAFACILE_BLENDER` oppure conf
 
 All'avvio viene registrato il componente aggiuntivo dalla copia del repository. Nella Vista 3D apri la barra laterale con `N` e scegli la scheda **FormaFacile**: trovi quattro pannelli — **Azioni principali**, **La mia scena**, **Oggetto scelto** e, nella modalità completa, **Comandi di Blender**.
 
-Nelle **Azioni principali** si creano **Cubo**, **Sfera**, **Cilindro**, **Piano** e **Luce**, si annulla e si ripete, si torna alla vista iniziale e si inquadra la scena. In **La mia scena** c'è l'elenco degli oggetti: si sceglie per nome (anche con più oggetti), si rinomina, si nasconde e si cerca. Il pannello **Oggetto scelto** cambia con la scelta: sposta, ruota e ingrandisce a passi, duplica, elimina, inquadra l'oggetto, cambia la potenza della luce o guarda la scena dalla telecamera. Ogni azione lascia un messaggio breve in italiano e tutte le azioni dei pannelli si possono annullare con `Ctrl+Z`, perché usano la storia di Blender.
+Nelle **Azioni principali** si creano **Cubo**, **Sfera**, **Cilindro**, **Cono**, **Piano**, **Ciambella**, **Testo** e **Luce**, con la grandezza regolabile da un solo campo; si annulla e si ripete, si torna alla vista iniziale e si inquadra la scena. In **La mia scena** c'è l'elenco degli oggetti: si sceglie per nome (anche con più oggetti), si rinomina, si nasconde, si blocca la scelta con il lucchetto e si cerca. Il pannello **Oggetto scelto** cambia con la scelta: sposta, ruota e ingrandisce a passi oppure con i campi numerici di posizione, rotazione e dimensione (con l'unità della scena); attiva le frecce, gli archi e i cubetti per lavorare con il mouse; porta al centro, appoggia sul piano, copia, incolla, duplica, elimina, inquadra l'oggetto, cambia la potenza della luce o guarda la scena dalla telecamera. Ogni azione lascia un messaggio breve in italiano e tutte le azioni che cambiano i dati si annullano con `Ctrl+Z`, perché usano la storia di Blender; i blocchi messi in Blender (asse bloccato, scelta bloccata) vengono sempre rispettati.
 
 ## Installazione del componente aggiuntivo
 
 Per installare una copia indipendente dal programma di avvio:
 
 1. Crea il pacchetto con `python3 scripts/crea_pacchetto.py`.
-2. In Blender apri **Modifica → Preferenze → Estensioni** e usa il comando **Installa da disco** per selezionare `dist/formafacile_3d-0.2.0.zip`.
+2. In Blender apri **Modifica → Preferenze → Estensioni** e usa il comando **Installa da disco** per selezionare `dist/formafacile_3d-0.3.0.zip`.
 3. Attiva **FormaFacile 3D**, se Blender non l'ha già attivato.
 4. Nella Vista 3D apri la barra laterale con `N` e seleziona **FormaFacile**.
 
@@ -83,10 +83,11 @@ Su Windows, se Python è installato tramite Python Launcher, usa `py -3` al post
 ## Stato e limiti
 
 Questa è la prima interfaccia utilizzabile, verificata automaticamente con il modulo `bpy` senza
-schermo (oltre 1600 controlli) e con 109 prove di unità; **non è ancora stata provata su uno schermo**,
+schermo (oltre 2800 controlli) e con 133 prove di unità; **non è ancora stata provata su uno schermo**,
 perché nell'ambiente di sviluppo non è installata una distribuzione Blender grafica. Restano da
-provare a mano disegno dei pannelli, suggerimenti, ridimensionamento, navigazione con il mouse e
-annullamento interattivo: l'elenco completo è in `docs/LIMITAZIONI.md`.
+provare a mano disegno dei pannelli, suggerimenti, ridimensionamento, navigazione con il mouse,
+trascinamento delle maniglie e annullamento interattivo: la checklist da seguire è in
+`docs/VERIFICA_MANUALE.md` e l'elenco dei limiti in `docs/LIMITAZIONI.md`.
 
 Non sono ancora presenti materiali e colori semplificati, sfondo, anteprima e immagine finale,
 animazione, gerarchia fra oggetti, importazione ed esportazione, scene iniziali guidate e assistente

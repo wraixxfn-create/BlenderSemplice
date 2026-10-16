@@ -46,7 +46,7 @@ class FORMAFACILE_OT_rinomina(OperatoreFormaFacile):
         try:
             nome_finale, cambiato = servizio_oggetti.rinomina(oggetto, self.nome)
         except ValueError:
-            return self.errore("ERRORE_NOME_VUOTO", "LOG_ERRORE_CREAZIONE", context)
+            return self.errore("ERRORE_NOME_VUOTO", "LOG_ERRORE_RINOMINA", context)
         if not cambiato:
             self.annuncia(context, TESTI["MESSAGGIO_RINOMINA_INVARIATA"])
             return {"FINISHED"}
@@ -262,6 +262,132 @@ def _cambia_luci(operatore, context, fattore: float) -> set[str]:
     return {"FINISHED"}
 
 
+class FORMAFACILE_OT_blocca_scelta(OperatoreFormaFacile):
+    """Blocca o sblocca la scelta degli oggetti indicati.
+
+    Il pulsante fa la cosa più utile: se fra gli oggetti scelti ce n'è almeno
+    uno libero, il comando blocca tutti; se sono tutti bloccati, li sblocca.
+    Blender non tiene scelto un oggetto che non si può scegliere, quindi
+    bloccando la scelta l'oggetto viene anche tolto dalla scelta: il messaggio
+    lo dice per non far sembrare sparito l'oggetto. Per la stessa ragione il
+    comando non richiede una scelta: si può sbloccare anche un oggetto che,
+    essendo bloccato, non si può scegliere.
+    """
+
+    bl_idname = comandi.ID_BLOCCA_SCELTA
+    bl_label = TESTI["AZIONE_BLOCCA_SCELTA"]
+    bl_description = TESTI["AIUTO_BLOCCA_SCELTA"]
+
+    oggetto: bpy.props.StringProperty(default="", options={"HIDDEN"})
+    blocca: bpy.props.BoolProperty(default=True, options={"HIDDEN"})
+
+    @classmethod
+    def poll(cls, context):
+        return OperatoreFormaFacile.in_modalita_oggetto(context) and (
+            getattr(context, "view_layer", None) is not None
+        )
+
+    def execute(self, context):
+        bersagli = self.bersagli(context, self.oggetto)
+        if not bersagli:
+            return self.richiedi_selezione(context)
+
+        # Il pulsante dell'interfaccia chiede quello che promette: blocca gli
+        # oggetti liberi e sblocca quelli già bloccati.
+        blocca = self.blocca
+        nomi = [oggetto.name for oggetto in bersagli]
+        esito = servizio_oggetti.blocca_scelta(bersagli, blocca, context.view_layer)
+        if not esito.applicati:
+            return self.errore("ERRORE_VISIBILITA", "LOG_ERRORE_CREAZIONE", context)
+
+        if blocca:
+            singolare, plurale = "MESSAGGIO_SCELTA_BLOCCATA", "MESSAGGIO_SCELTA_BLOCCATE"
+        else:
+            singolare, plurale = "MESSAGGIO_SCELTA_SBLOCCATA", "MESSAGGIO_SCELTA_SBLOCCATE"
+        if esito.applicati == 1 and nomi:
+            testo = TESTI[singolare].format(nome=nomi[0])
+        else:
+            testo = TESTI[plurale].format(numero=esito.applicati)
+        self.annuncia(context, testo)
+        return {"FINISHED"}
+
+
+class FORMAFACILE_OT_copia(OperatoreFormaFacile):
+    """Copia gli oggetti scelti usando gli appunti di Blender.
+
+    Si appoggia al comando nativo: così ciò che si copia qui si può incollare
+    anche con i comandi di Blender, senza introdurre un formato proprio.
+    """
+
+    bl_idname = comandi.ID_COPIA
+    bl_label = TESTI["AZIONE_COPIA"]
+    bl_description = TESTI["AIUTO_COPIA"]
+
+    @classmethod
+    def poll(cls, context):
+        return OperatoreFormaFacile.in_modalita_oggetto(context) and bool(
+            OperatoreFormaFacile.scelti(context)
+        )
+
+    def execute(self, context):
+        scelti = self.scelti(context)
+        if not scelti:
+            return self.richiedi_selezione(context)
+        esito = servizio_vista.esegui_in_vista(context, comandi.ID_NATIVO_COPIA)
+        if esito is None or "FINISHED" not in esito:
+            self.report({"WARNING"}, TESTI["ERRORE_COPIA_NON_RIUSCITA"])
+            self.annuncia(context, TESTI["ERRORE_COPIA_NON_RIUSCITA"])
+            return {"CANCELLED"}
+        testo = TESTI["MESSAGGIO_COPIATI"].format(numero=len(scelti))
+        self.annuncia(context, testo)
+        self.report({"INFO"}, testo)
+        return {"FINISHED"}
+
+
+class FORMAFACILE_OT_incolla(OperatoreFormaFacile):
+    """Incolla gli oggetti copiati usando gli appunti di Blender.
+
+    L'esito si controlla contando gli oggetti della scena prima e dopo: se non
+    ne compaiono di nuovi, gli appunti erano vuoti e il messaggio lo dice in
+    italiano invece di lasciare un comando silenzioso.
+    """
+
+    bl_idname = comandi.ID_INCOLLA
+    bl_label = TESTI["AZIONE_INCOLLA"]
+    bl_description = TESTI["AIUTO_INCOLLA"]
+
+    @classmethod
+    def poll(cls, context):
+        return (
+            OperatoreFormaFacile.in_modalita_oggetto(context)
+            and getattr(context, "view_layer", None) is not None
+        )
+
+    def execute(self, context):
+        vettore = getattr(context, "view_layer", None)
+        if vettore is None:
+            return self.errore("ERRORE_INCOLLA_NON_RIUSCITA", "LOG_ERRORE_CREAZIONE", context)
+        prima = len(list(vettore.objects))
+        esito = servizio_vista.esegui_in_vista(context, comandi.ID_NATIVO_INCOLLA)
+        if esito is None:
+            # Nessuna Vista 3D: il comando nativo non è proprio eseguibile.
+            self.report({"WARNING"}, TESTI["ERRORE_INCOLLA_NON_RIUSCITA"])
+            self.annuncia(context, TESTI["ERRORE_INCOLLA_NON_RIUSCITA"])
+            return {"CANCELLED"}
+
+        dopo = len(list(vettore.objects))
+        if "FINISHED" not in esito or dopo <= prima:
+            # Il comando è partito ma non c'era nulla da incollare.
+            self.report({"WARNING"}, TESTI["ERRORE_NIENTE_DA_INCOLLARE"])
+            self.annuncia(context, TESTI["ERRORE_NIENTE_DA_INCOLLARE"])
+            return {"CANCELLED"}
+
+        testo = TESTI["MESSAGGIO_INCOLLATI"].format(numero=dopo - prima)
+        self.annuncia(context, testo)
+        self.report({"INFO"}, testo)
+        return {"FINISHED"}
+
+
 class FORMAFACILE_OT_guarda_da_camera(OperatoreFormaFacile):
     """Mostra la scena dal punto di vista della telecamera scelta.
 
@@ -322,6 +448,9 @@ CLASSI = (
     FORMAFACILE_OT_alterna_visibilita,
     FORMAFACILE_OT_mostra_tutti,
     FORMAFACILE_OT_inquadra_oggetto,
+    FORMAFACILE_OT_blocca_scelta,
+    FORMAFACILE_OT_copia,
+    FORMAFACILE_OT_incolla,
     FORMAFACILE_OT_luce_piu,
     FORMAFACILE_OT_luce_meno,
     FORMAFACILE_OT_guarda_da_camera,

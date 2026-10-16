@@ -82,6 +82,8 @@ def disegna_campo(contenitore, campo: Campo, risolutore: dict[str, object]) -> N
         parametri["expand"] = True
     if campo.interruttore:
         parametri["toggle"] = True
+    if campo.indice is not None:
+        parametri["index"] = campo.indice
 
     try:
         contenitore.prop(datablock, campo.proprieta, **parametri)

@@ -13,6 +13,8 @@ iniziale" rimette quei valori e poi inquadra tutta la scena.
 
 from __future__ import annotations
 
+import contextlib
+
 import bpy
 import mathutils
 
@@ -108,6 +110,96 @@ def aree_vista_disponibili(context) -> bool:
         return next(_aree_vista(context), None) is not None
     except (AttributeError, ReferenceError, RuntimeError, TypeError):
         return False
+
+
+def prima_area(context):
+    """Finestra, area e regione della prima Vista 3D disponibile."""
+    try:
+        for finestra, _schermo, _indice, area, _spazio, regione in _aree_vista(context):
+            return finestra, area, regione
+    except (AttributeError, ReferenceError, RuntimeError, TypeError):
+        return None, None, None
+    return None, None, None
+
+
+@contextlib.contextmanager
+def contesto_area_vista(context):
+    """Esegue un blocco con il contesto di una Vista 3D.
+
+    Alcuni comandi nativi (copia, incolla, strumenti) funzionano solo se il
+    contesto è una Vista 3D. Senza finestre, o senza una Vista 3D, il blocco
+    riceve `None`: chi chiama deve allora avvisare l'utente, non fallire.
+    """
+    finestra, area, regione = prima_area(context)
+    if area is None:
+        yield None
+        return
+    try:
+        with bpy.context.temp_override(window=finestra, area=area, region=regione):
+            yield area
+    except (AttributeError, ReferenceError, RuntimeError, TypeError, ValueError):
+        yield None
+
+
+def esegui_in_vista(context, idname: str, **parametri: object):
+    """Richiama un comando nativo dentro una Vista 3D.
+
+    Restituisce l'esito di Blender, oppure None quando il comando non esiste o
+    non è possibile: nessuna eccezione arriva all'interfaccia.
+    """
+    modulo, _, nome = str(idname).partition(".")
+    gruppo = getattr(bpy.ops, modulo, None)
+    operatore = getattr(gruppo, nome, None)
+    if operatore is None:
+        return None
+    try:
+        with contesto_area_vista(context) as area:
+            if area is None:
+                return None
+            if not operatore.poll():
+                return None
+            return operatore(**parametri)
+    except (AttributeError, ReferenceError, RuntimeError, TypeError, ValueError) as errore:
+        ottieni_logger().debug(f"{TESTI['LOG_ERRORE_VISTA']} {type(errore).__name__}")
+        return None
+
+
+def attiva_strumento(context, nome_strumento: str) -> bool:
+    """Attiva uno strumento nativo di Blender e ne mostra le maniglie.
+
+    Gli strumenti `builtin.move`, `builtin.rotate` e `builtin.scale` sono quelli
+    della barra degli strumenti di Blender: attivarli è il modo pubblico per
+    far comparire frecce, archi e cubetti nella Vista 3D. Gli interruttori che
+    nascondono le maniglie vengono riaccesi, altrimenti il pulsante sembrerebbe
+    non fare nulla.
+    """
+    with contesto_area_vista(context) as area:
+        if area is None:
+            return False
+        riuscito = False
+        try:
+            esito = bpy.ops.wm.tool_set_by_id(name=nome_strumento)
+            riuscito = "FINISHED" in esito
+        except (AttributeError, ReferenceError, RuntimeError, TypeError, ValueError):
+            riuscito = False
+        if not riuscito:
+            return False
+        _mostra_maniglie(area)
+        return True
+
+
+def _mostra_maniglie(area) -> None:
+    """Riaccende gli interruttori che rendono visibili le maniglie."""
+    spazio = getattr(getattr(area, "spaces", None), "active", None)
+    if spazio is None:
+        return
+    for nome in configuration.MOSTRA_MANIGLIE:
+        if not hasattr(spazio, nome):
+            continue
+        try:
+            setattr(spazio, nome, True)
+        except (AttributeError, ReferenceError, RuntimeError, TypeError, ValueError):
+            continue
 
 
 def registra_viste_iniziali() -> int:

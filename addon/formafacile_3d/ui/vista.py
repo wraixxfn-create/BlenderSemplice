@@ -10,7 +10,13 @@ from __future__ import annotations
 from .. import configuration
 from ..blender import selezione
 from ..blender import vista as servizio_vista
-from ..scene.stato import messaggio_della_scena, modalita_della_scena, passo_della_scena
+from ..scene import misure
+from ..scene.stato import (
+    grandezza_della_scena,
+    messaggio_della_scena,
+    modalita_della_scena,
+    passo_della_scena,
+)
 from . import icone
 from .modello import Contesto, Oggetto
 
@@ -50,8 +56,35 @@ def raccogli_contesto(context) -> tuple[Contesto, dict[str, object]]:
         soglia_filtro=configuration.SOGLIA_FILTRO,
         gradi_rotazione=configuration.ANGOLO_PREDEFINITO_GRADI,
         percentuale_scala=int(round((configuration.FATTORE_SCALA_PREDEFINITO - 1.0) * 100)),
+        unita_lunghezza=_unita_lunghezza(scena),
+        unita_angolo=_unita_angolo(scena),
+        grandezza_forma=grandezza_della_scena(scena),
     )
     return contesto, risolutore
+
+
+def _impostazioni_unita(scena):
+    """Impostazioni delle unità della scena, se disponibili."""
+    return getattr(scena, "unit_settings", None)
+
+
+def _unita_lunghezza(scena) -> str:
+    """Abbreviazione dell'unità di lunghezza usata dalla scena."""
+    impostazioni = _impostazioni_unita(scena)
+    if impostazioni is None:
+        return "m"
+    return misure.unita_lunghezza(
+        str(getattr(impostazioni, "system", "NONE")),
+        str(getattr(impostazioni, "length_unit", "METERS")),
+    )
+
+
+def _unita_angolo(scena) -> str:
+    """Abbreviazione dell'unità degli angoli usata dalla scena."""
+    impostazioni = _impostazioni_unita(scena)
+    if impostazioni is None:
+        return "°"
+    return misure.unita_angolo(str(getattr(impostazioni, "system_rotation", "DEGREES")))
 
 
 def _nascosto_direttamente(oggetto) -> bool:

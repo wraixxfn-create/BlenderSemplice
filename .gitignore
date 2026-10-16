@@ -7,3 +7,6 @@ __pycache__/
 
 # Librerie fittizie per i test con il modulo bpy
 /.cache/
+
+# Ambiente virtuale con il modulo bpy per le prove senza schermo
+/.venv/

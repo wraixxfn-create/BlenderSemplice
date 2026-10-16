@@ -12,7 +12,7 @@ from .logging_service import ottieni_logger
 bl_info = {
     "name": TESTI["NOME_ESTENSIONE"],
     "author": TESTI["AUTORE_ESTENSIONE"],
-    "version": (0, 2, 0),
+    "version": (0, 3, 0),
     "blender": (4, 5, 0),
     "location": TESTI["POSIZIONE_ESTENSIONE"],
     "description": TESTI["DESCRIZIONE_ESTENSIONE"],

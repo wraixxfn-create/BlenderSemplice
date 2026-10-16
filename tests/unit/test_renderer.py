@@ -40,10 +40,20 @@ def scena_finta(**valori: object) -> object:
 
 
 def oggetto_finto(nome: str = "Cubo", **valori: object) -> object:
-    """Oggetto finto con i dati separati, come in Blender."""
+    """Oggetto finto con i dati separati, come in Blender.
+
+    Include le proprietà usate dai campi numerici del pannello Oggetto scelto
+    (posizione, rotazione e dimensione), così le prove verificano che quei campi
+    vengano disegnati davvero e non sostituiti da righe disattivate.
+    """
     dati = valori.pop("dati", None)
     if dati is None:
         dati = types.SimpleNamespace(name=f"Geometria di {nome}", energy=1000.0)
+    valori.setdefault("location", (0.0, 0.0, 0.0))
+    valori.setdefault("rotation_mode", "XYZ")
+    valori.setdefault("rotation_euler", (0.0, 0.0, 0.0))
+    valori.setdefault("dimensions", (2.0, 2.0, 2.0))
+    valori.setdefault("scale", (1.0, 1.0, 1.0))
     return types.SimpleNamespace(name=nome, data=dati, **valori)
 
 
@@ -369,13 +379,14 @@ class TestPianoRealeSulDisegno(unittest.TestCase):
         chiavi = [pannello_ui.chiave for pannello_ui in piano.costruisci_piano(contesto)]
         self.assertNotIn("completo", chiavi)
 
+        # I campi numerici (posizione, rotazione, dimensione) sono previsti anche
+        # nella modalità Semplice: sono i numeri che chi inizia chiede. Restano
+        # invece fuori i campi tecnici veri, quelli della modalità Completa.
         tecnici = {
             "name",
-            "location",
             "scale",
             "display_type",
             "rotation_mode",
-            "rotation_euler",
             "hide_render",
             "hide_select",
         }
@@ -387,6 +398,30 @@ class TestPianoRealeSulDisegno(unittest.TestCase):
             )
             disegnate.extend(proprieta for _tipo, proprieta in supporto_finto.campi(registro))
         self.assertEqual([nome for nome in disegnate if nome in tecnici], [])
+        for previsto in ("location", "rotation_euler", "dimensions"):
+            self.assertIn(previsto, disegnate)
+
+    def test_i_campi_numerici_usano_uno_asse_per_volta(self):
+        """Posizione e dimensione si disegnano come tre campi brevi, uno per asse."""
+        contesto = self.contesto()
+        risolutore = {"scena": scena_finta(), "Albero": oggetto_finto("Albero")}
+        registro: list[dict] = []
+        for pannello_ui in piano.costruisci_piano(contesto):
+            renderer.disegna_pannello(
+                supporto_finto.BloccoFinto(registro), pannello_ui, risolutore
+            )
+        per_indice: dict[tuple[str, int], int] = {}
+        for voce in registro:
+            if voce["tipo"] != "campo":
+                continue
+            indice = voce["parametri"].get("index")
+            if indice is None:
+                continue
+            chiave = (str(voce["proprieta"]), int(indice))
+            per_indice[chiave] = per_indice.get(chiave, 0) + 1
+        for proprieta in ("location", "dimensions"):
+            for indice in range(3):
+                self.assertIn((proprieta, indice), per_indice)
 
 
 _IDENTIFICATORI_DICHIARATI = {
