@@ -10,4 +10,8 @@ Blender non è incluso nel repository né nell'archivio ZIP: l'utente installa u
 
 Il codice dell'applicazione non dipende da pacchetti Python aggiuntivi. Durante l'analisi è stato scaricato solo nell'area temporanea di sviluppo un pacchetto `bpy==4.5.14` da PyPI per valutare i test delle interfacce di programmazione; non è incluso nei file del progetto, non viene impacchettato e non è necessario per l'utente finale.
 
+## Modelli della libreria iniziale
+
+I modelli sono generati da codice scritto nel progetto usando vertici, facce, curve di testo, materiali e luci creati tramite le API di Blender. Non sono inclusi modelli 3D, immagini, texture o font di terzi. L'insegna usa il font predefinito già fornito da Blender; non vengono distribuiti file di font separati. Il codice che genera la libreria resta coperto dalla licenza del progetto.
+
 Prima di ogni distribuzione andranno controllati e documentati la licenza della specifica distribuzione Blender, le licenze di eventuali componenti aggiunti, i pesi di qualsiasi modello locale e gli obblighi di attribuzione e disponibilità del codice sorgente. Non distribuire pesi o binari di terzi senza averne verificato i termini.

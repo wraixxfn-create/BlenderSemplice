@@ -148,6 +148,7 @@ VISTA_INIZIALE_DISTANZA = 17.9866
 
 # Chiavi riservate del risolutore di dati dell'interfaccia.
 CHIAVE_SCENA = "scena"
+CHIAVE_STATO = "stato_formafacile"
 RIFERIMENTO_SCENA = "scena"
 RIFERIMENTO_OGGETTO = "oggetto"
 RIFERIMENTO_DATI = "dati"

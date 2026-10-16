@@ -175,6 +175,9 @@ class Contesto:
     # Guida passo passo in corso: la chiave e il passo mostrato.
     guida: str = ""
     passo_guida: int = 0
+    # Modello scelto nella libreria e descrizione mostrata prima dell'inserimento.
+    asset_selezionato: str = "tavolino"
+    asset_descrizione: str = ""
 
     # Campi derivati, calcolati una volta sola.
     elenco: tuple[Oggetto, ...] = field(default=(), repr=False)

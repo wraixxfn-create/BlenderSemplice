@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from .. import comandi, configuration
 from ..localization import TESTI
-from ..scene import guide
+from ..scene import guide, libreria
 from ..scene import misure
 from ..scene import regole_modellazione as regole
 from ..scene import testi as testi_lunghi
@@ -23,6 +23,7 @@ def costruisci_piano(contesto: Contesto) -> tuple[Pannello, ...]:
     pannelli = [
         Pannello("principale", _pannello_principale(contesto)),
         Pannello("scena", _pannello_scena(contesto)),
+        Pannello("libreria", _pannello_libreria(contesto)),
         Pannello("oggetto", _pannello_oggetto(contesto)),
         Pannello("modella", _pannello_modella(contesto)),
     ]
@@ -153,6 +154,52 @@ def _pannello_principale(contesto: Contesto) -> tuple[Gruppo, ...]:
     gruppi.append(_gruppo(TESTI["GRUPPO_AIUTO"], *consigli))
 
     return tuple(gruppi)
+
+
+def _pannello_libreria(contesto: Contesto) -> tuple[Gruppo, ...]:
+    """Descrizione, parametri e comando per inserire un modello geometrico."""
+    scheda = libreria.scheda(contesto.asset_selezionato)
+    righe = [
+        _riga(
+            Campo(
+                riferimento=configuration.RIFERIMENTO_SCENA,
+                chiave=configuration.CHIAVE_STATO,
+                proprieta="asset_selezionato",
+                testo=TESTI["ASSET_SELEZIONA"],
+            )
+        )
+    ]
+    righe.extend(
+        _riga(Etichetta(riga))
+        for riga in testi_lunghi.righe_di_testo(
+            contesto.asset_descrizione or scheda.descrizione,
+            configuration.LUNGHEZZA_MASSIMA_ETICHETTA,
+        )
+    )
+    righe.extend(
+        _riga(
+            Campo(
+                riferimento=configuration.RIFERIMENTO_SCENA,
+                chiave=configuration.CHIAVE_STATO,
+                proprieta=chiave,
+                testo=TESTI[libreria.CAMPI[chiave]],
+            )
+        )
+        for chiave in scheda.campi
+    )
+    righe.append(
+        Riga(
+            (
+                _azione(
+                    comandi.ID_AGGIUNGI_ASSET,
+                    TESTI["ASSET_AZIONE_AGGIUNGI"],
+                    "OUTLINER_COLLECTION",
+                ),
+            ),
+            disabilitata=not contesto.in_modalita_oggetto,
+        )
+    )
+    return (_gruppo(TESTI["GRUPPO_LIBRERIA_ASSET"], *righe),)
 
 
 # --------------------------------------------------------------------- scena
