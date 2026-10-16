@@ -40,9 +40,11 @@ class FORMAFACILE_OT_rinomina(OperatoreFormaFacile):
         return context.window_manager.invoke_props_dialog(self, width=320)
 
     def execute(self, context):
-        oggetto = self.risolvi_oggetto(context, self.oggetto)
+        # Senza nome indicato si rinomina l'oggetto attivo: è così che la guida
+        # passo passo rinomina la forma appena creata, senza conoscerne il nome.
+        oggetto = self.risolvi_oggetto(context, self.oggetto) or self.oggetto_attivo(context)
         if oggetto is None:
-            return {"CANCELLED"}
+            return self.richiedi_selezione(context)
         try:
             nome_finale, cambiato = servizio_oggetti.rinomina(oggetto, self.nome)
         except ValueError:

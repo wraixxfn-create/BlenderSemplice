@@ -32,6 +32,7 @@ TESTI = MappingProxyType(
         "TITOLO_PANNELLO_SCENA": "La mia scena",
         "TITOLO_PANNELLO_OGGETTO": "Oggetto scelto",
         "TITOLO_PANNELLO_COMPLETO": "Comandi di Blender",
+        "TITOLO_PANNELLO_MODELLA": "Dai forma",
         # Modalità.
         "ETICHETTA_MODALITA": "Modalità",
         "MODALITA_SEMPLICE": "Semplice",
@@ -57,6 +58,16 @@ TESTI = MappingProxyType(
         "GRUPPO_TECNICO": "Comandi tecnici",
         "GRUPPO_DATI": "Dati dell'oggetto",
         "GRUPPO_AIUTO": "Consigli",
+        "GRUPPO_SPIGOLI": "Spigoli e superficie",
+        "GRUPPO_ASPETTO": "Aspetto della superficie",
+        "GRUPPO_SIMILE_LISCIO": "Forma più arrotondata",
+        "GRUPPO_SPECCHIO": "Specchio e spessore",
+        "GRUPPO_COPIE": "Ripeti la forma",
+        "GRUPPO_UNISCI": "Unisci o taglia",
+        "GRUPPO_ALLINEA": "Allinea e spazia",
+        "GRUPPO_GRUPPI": "Gruppi",
+        "GRUPPO_MODIFICHE": "Modifiche non applicate",
+        "GRUPPO_GUIDA": "Impara: una casetta",
         # Campi e ricerche.
         "ETICHETTA_PASSO": "Passo",
         "AIUTO_PASSO": "Di quanto si sposta l'oggetto a ogni clic, in metri.",
@@ -349,6 +360,382 @@ TESTI = MappingProxyType(
         "AIUTO_TELECAMERA_PRINCIPALE": "Usa questa telecamera per l'immagine finale.",
         "MESSAGGIO_TELECAMERA_PRINCIPALE": "Telecamera principale: {nome}",
         "ERRORE_TELECAMERA": "Non è stato possibile usare la telecamera.",
+        # Strumenti guidati di modellazione (pannello "Dai forma").
+        "AZIONE_AMMORBIDISCI_SPIGOLI": "Arrotonda gli spigoli",
+        "AIUTO_AMMORBIDISCI_SPIGOLI": (
+            "Arrotonda gli spigoli vivi della forma con una modifica che si può togliere."
+        ),
+        "DIALOGO_AMMORBIDISCI_SPIGOLI": (
+            "Gli spigoli vivi diventano tondi. La forma di partenza resta quella di prima: "
+            "la modifica si può togliere quando vuoi."
+        ),
+        "ETICHETTA_FORZA": "Quanto arrotondare",
+        "AIUTO_FORZA": "Da 1 (appena) a 5 (molto): quanto diventano tondi gli spigoli.",
+        "ETICHETTA_SEGMENTI": "Segmenti del raccordo",
+        "AIUTO_SEGMENTI": "Quanti pezzi compongono il raccordo: più pezzi, più tondo.",
+        "ETICHETTA_ANGOLO_SPIGOLO": "Angolo da arrotondare",
+        "AIUTO_ANGOLO_SPIGOLO": "Vengono arrotondati solo gli spigoli più vivi di questo angolo.",
+        "ETICHETTA_RAGGIO": "Raggio del raccordo",
+        "AIUTO_RAGGIO": "Quanto è grande l'arrotondamento, nell'unità della scena.",
+        "MESSAGGIO_SPIGOLI": "Spigoli ammorbiditi: {nome}.",
+        "MESSAGGIO_SPIGOLI_RAGGIO": "Spigoli ammorbiditi: {nome} (raggio {raggio} {unita}).",
+        "ERRORE_SERVE_FORMA": (
+            "Serve una forma (una mesh): per una scritta o una curva usa Trasforma in forma."
+        ),
+        "ERRORE_FORMA_VUOTA": "Questa forma è vuota: non c'è nulla da modificare.",
+        "ERRORE_FORMA_NON_LEGGIBILE": "Non riesco a leggere la forma di questo oggetto.",
+        "ERRORE_MODIFICATORE_NON_AGGIUNTO": (
+            "Questa modifica non si può aggiungere a questo tipo di oggetto."
+        ),
+        "ERRORE_SENZA_SPIGOLI": "Questa forma non ha spigoli vivi: è già morbida.",
+        "ERRORE_SPIGOLI_NON_RIUSCITI": "Non è stato possibile ammorbidire gli spigoli.",
+        "AZIONE_SUPERFICIE_LISCIA": "Superficie liscia",
+        "AIUTO_SUPERFICIE_LISCIA": (
+            "Illumina la superficie come se fosse continua: non cambia la forma."
+        ),
+        "AZIONE_SUPERFICIE_A_FACCE": "Superficie a facce",
+        "AIUTO_SUPERFICIE_A_FACCE": (
+            "Rimette in evidenza le facce: è l'aspetto di prima della superficie liscia."
+        ),
+        "MESSAGGIO_SUPERFICIE_LISCIA": "Superficie mostrata liscia: l'aspetto cambia, le facce no.",
+        "MESSAGGIO_SUPERFICIE_A_FACCE": "Superficie mostrata a facce: l'aspetto cambia, le facce no.",
+        "ERRORE_SUPERFICIE": "Non è stato possibile cambiare l'aspetto della superficie.",
+        "AZIONE_FORMA_PIU_LISCIA": "Forma più arrotondata",
+        "AIUTO_FORMA_PIU_LISCIA": (
+            "Aggiunge facce per arrotondare davvero la forma: qui si cambia la geometria."
+        ),
+        "DIALOGO_FORMA_PIU_LISCIA": (
+            "Qui la forma cambia davvero: ogni livello aggiunge facce e arrotonda di più. "
+            "Stima: da {prima} a {dopo} facce."
+        ),
+        "ETICHETTA_LIVELLI": "Quanto arrotondare",
+        "AIUTO_LIVELLI": "Ogni livello aggiunge facce e arrotonda di più (al massimo tre).",
+        "MESSAGGIO_FORMA_LISCIA": "Forma più arrotondata: {nome}, ora {facce} facce.",
+        "ERRORE_FORMA_LISCIA": "Non è stato possibile arrotondare la forma.",
+        "AZIONE_SPECCHIA": "Rispecchia",
+        "AIUTO_SPECCHIA": "Crea il lato uguale e opposto, come uno specchio sull'asse scelto.",
+        "DIALOGO_SPECCHIA": (
+            "Nasce il lato uguale e opposto della forma, rispetto al cursore 3D. Il "
+            "segnaposto Specchio segna il piano dello specchio e si sposta come un "
+            "oggetto qualsiasi."
+        ),
+        "NOME_SPECCHIO": "Specchio",
+        "NOTA_SPECCHIO": "Lo specchio usa il cursore 3D come piano, e il segnaposto Specchio lo segue.",
+        "ERRORE_SPECCHIO_SEGNAPOSTO": "Non è stato possibile segnare il piano dello specchio.",
+        "AVVISO_SPECCHIO_SENZA_CENTRO": "Manca il segnaposto dello specchio: la forma si rispecchia su se stessa.",
+        "ETICHETTA_ASSE": "Asse dello specchio",
+        "AIUTO_ASSE_SPECCHIO": "L'asse perpendicolare allo specchio: X, Y oppure Z.",
+        "ETICHETTA_UNISCI_CENTRO": "Unisci i bordi al centro",
+        "AIUTO_UNISCI_CENTRO": "Tiene ferme le facce sul piano dello specchio.",
+        "ETICHETTA_DISTANZA_UNIONE": "Distanza di unione",
+        "AIUTO_DISTANZA_UNIONE": "Avvicina fra loro i vertici che stanno a questa distanza.",
+        "MESSAGGIO_SPECCHIATA": "Rispecchiata su {asse}: {nome}.",
+        "ERRORE_SPECCHIO_SIMMETRICA": (
+            "Questa forma sta a cavallo dello specchio: spostala da una parte, o porta il "
+            "cursore 3D dall'altra, e riprova."
+        ),
+        "ERRORE_SPECCHIO": "Non è stato possibile creare lo specchio.",
+        "AZIONE_RIPETI_COPIE": "Ripeti la forma",
+        "AIUTO_RIPETI_COPIE": "Crea altre copie della forma, in fila oppure in cerchio.",
+        "AZIONE_RIPETI_FILA": "In fila",
+        "AIUTO_RIPETI_FILA": "Crea copie in fila, alla distanza scelta.",
+        "AZIONE_RIPETI_CERCHIO": "In cerchio",
+        "AIUTO_RIPETI_CERCHIO": "Crea copie attorno al centro scelto, alla stessa distanza.",
+        "DIALOGO_RIPETI_FILA": (
+            "Le copie si mettono in fila lungo l'asse scelto e restano legate all'originale: "
+            "la fila si può togliere o correggere quando vuoi."
+        ),
+        "DIALOGO_RIPETI_CERCHIO": (
+            "Le copie si mettono in cerchio attorno al centro scelto. Sono oggetti a sé, "
+            "con la stessa forma dell'originale: si possono spostare uno per uno."
+        ),
+        "ETICHETTA_QUANTE_COPIE": "Quante forme in tutto",
+        "AIUTO_QUANTE_COPIE": "Compresa l'originale: 4 vuol dire l'originale più 3 copie.",
+        "ETICHETTA_SPAZIATURA": "Distanza fra le copie",
+        "AIUTO_SPAZIATURA": "Quanto spazio c'è fra una copia e la successiva.",
+        "ETICHETTA_DISTANZA_CENTRO": "Distanza dal centro",
+        "AIUTO_DISTANZA_CENTRO": (
+            "Quanto distano le copie dal centro del giro; se l'oggetto è sul centro, viene spostato lì."
+        ),
+        "ETICHETTA_CENTRO_GIRO": "Centro del giro",
+        "AIUTO_CENTRO_GIRO": "Il punto attorno a cui girano le copie.",
+        "AZIONE_CENTRO_CURSORE": "Cursore 3D",
+        "AZIONE_CENTRO_SCENA": "Centro della scena",
+        "ETICHETTA_VOLTA_COPIE": "Volta le copie verso l'esterno",
+        "AIUTO_VOLTA_COPIE": "Ogni copia guarda fuori dal cerchio, come in un girotondo.",
+        "MESSAGGIO_RIPETUTE_FILA": "Copie in fila: {numero} forme in tutto, ogni {distanza} {unita}.",
+        "MESSAGGIO_RIPETUTE_CERCHIO": (
+            "Copie in cerchio: {numero} forme in tutto, a {distanza} {unita} dal centro."
+        ),
+        "ERRORE_RIPETI": "Non è stato possibile ripetere la forma.",
+        "ERRORE_RIPETI_CENTRO": (
+            "Le copie finirebbero tutte sull'originale: dì una distanza dal centro maggiore di zero."
+        ),
+        "AZIONE_SPESSORE_PARETE": "Aggiungi spessore",
+        "AIUTO_SPESSORE_PARETE": (
+            "Dà spessore a una superficie sottile, senza cambiare la forma di partenza."
+        ),
+        "DIALOGO_SPESSORE": (
+            "La superficie diventa una parete spessa: la forma di partenza resta dove è e la "
+            "modifica si può togliere."
+        ),
+        "ETICHETTA_SPESSORE": "Spessore",
+        "AIUTO_SPESSORE": "Quanto diventa spessa la parete, nell'unità della scena.",
+        "ETICHETTA_VERSO_SPESSORE": "Verso dello spessore",
+        "AIUTO_VERSO_SPESSORE": "Se lo spessore va verso l'interno o verso l'esterno della forma.",
+        "AZIONE_SPESSORE_DENTRO": "Verso l'interno",
+        "AZIONE_SPESSORE_FUORI": "Verso l'esterno",
+        "MESSAGGIO_SPESSORE": "Spessore aggiunto: {nome}, {spessore} {unita}.",
+        "MESSAGGIO_SPESSORE_RIDOTTO": (
+            "Spessore aggiunto: {nome}, {spessore} {unita} (ridotto perché la forma è piccola)."
+        ),
+        "ERRORE_SPESSORE": "Non è stato possibile aggiungere lo spessore.",
+        "AZIONE_UNISCI": "Unisci",
+        "AIUTO_UNISCI": "Le due forme diventano una forma sola.",
+        "AZIONE_TAGLIA": "Taglia",
+        "AIUTO_TAGLIA": "La seconda forma viene tolta dalla prima, come un ritaglio.",
+        "AZIONE_INCROCIA": "Incrocia",
+        "AIUTO_INCROCIA": "Resta solo la parte in cui le due forme si sovrappongono.",
+        "ETICHETTA_OPERAZIONE": "Cosa fare",
+        "AIUTO_OPERAZIONE": "Scegli se unire, tagliare o incrociare le due forme scelte.",
+        "ETICHETTA_OGGETTO_PRINCIPALE": "Forma principale: {nome}",
+        "ETICHETTA_OGGETTO_ATTREZZO": "Che taglia o unisce: {nome}",
+        "DIALOGO_UNISCI": (
+            "Forma principale: {principale}. Che taglia o unisce: {attrezzo}. "
+            "Il secondo resta nella scena, nascosto, e la modifica si può togliere."
+        ),
+        "MESSAGGIO_UNIONE": "Unite due forme: {principale} e {attrezzo}.",
+        "MESSAGGIO_DIFFERENZA": "Tagliata una forma: {attrezzo} via da {principale}.",
+        "MESSAGGIO_INTERSEZIONE": "Incrociate due forme: {principale} e {attrezzo}.",
+        "ERRORE_UNISCI_POCHI": (
+            "Per unire o tagliare servono due forme scelte: la principale e quella che taglia."
+        ),
+        "ERRORE_UNISCI_TROPPI": (
+            "Hai scelto più di due oggetti: scegline due, quello attivo è la forma principale."
+        ),
+        "ERRORE_UNISCI_SERVE_FORMA": (
+            "Si uniscono e si tagliano solo forme (mesh): {nome} non lo è."
+        ),
+        "ERRORE_UNISCI_ATTREZZO_APERTO": (
+            "L'oggetto che taglia non è chiuso (per esempio è un piano): serve una forma chiusa."
+        ),
+        "ERRORE_UNISCI_STESSA_FORMA": "La forma principale e quella che taglia devono essere due oggetti diversi.",
+        "ERRORE_UNISCI_VUOTO": "Il risultato è vuoto: le due forme non si toccano.",
+        "ERRORE_UNISCI_TROPPE_FACCE": "Il risultato avrebbe troppe facce: prova con forme più semplici.",
+        "ERRORE_UNISCI": "Non è stato possibile unire o tagliare le forme.",
+        "AZIONE_CONVERTI_IN_FORMA": "Trasforma in forma",
+        "AIUTO_CONVERTI_IN_FORMA": (
+            "Trasforma una scritta o una curva in una forma (mesh), come fa Blender."
+        ),
+        "DIALOGO_CONVERTI_IN_FORMA": (
+            "La scritta (o la curva) diventa una forma: da quel momento non si può più cambiare "
+            "il testo, ma si può lavorare come su tutte le altre forme. Si annulla con Ctrl+Z."
+        ),
+        "MESSAGGIO_CONVERTITA": "Trasformata in forma: {nome}.",
+        "ERRORE_CONVERTI": "Non è stato possibile trasformare l'oggetto in una forma.",
+        "AZIONE_ALLINEA": "Allinea",
+        "AIUTO_ALLINEA": "Sposta gli oggetti scelti fino a far combaciare i bordi o i centri.",
+        "ETICHETTA_ASSE_ALLINEA": "Su quale asse",
+        "AIUTO_ASSE_ALLINEA": "L'asse lungo cui gli oggetti vengono messi in riga.",
+        "ETICHETTA_BORDO_ALLINEA": "Attacca a",
+        "AIUTO_BORDO_ALLINEA": "Quale parte degli oggetti deve combaciare.",
+        "AZIONE_ALLINEA_INIZIO": "Inizio",
+        "AZIONE_ALLINEA_CENTRO": "Centro",
+        "AZIONE_ALLINEA_FINE": "Fine",
+        "ETICHETTA_RIFERIMENTO_ALLINEA": "Misura dal punto di riferimento",
+        "AIUTO_RIFERIMENTO_ALLINEA": (
+            "Allinea i punti di riferimento (le origini) invece dei bordi delle forme."
+        ),
+        "AZIONE_RIFERIMENTO_BORDO": "Bordo",
+        "AZIONE_RIFERIMENTO_PUNTO": "Punto di riferimento",
+        "MESSAGGIO_ALLINEATI": "Allineati {numero} oggetti sull'asse {asse}.",
+        "MESSAGGIO_ALLINEATI_INVARIATI": "Gli oggetti scelti erano già allineati.",
+        "AIUTO_GRUPPO_ALLINEA": (
+            "Allinea: bordi o centri alla stessa posizione. Spazia: stessa distanza fra un oggetto e l'altro."
+        ),
+        "AZIONE_SPAZIA": "Spazia in modo uguale",
+        "AIUTO_SPAZIA": "Mette gli oggetti scelti alla stessa distanza l'uno dall'altro.",
+        "MESSAGGIO_SPAZIATI": "Spaziati {numero} oggetti sull'asse {asse}, a {spazio} {unita} l'uno dall'altro.",
+        "MESSAGGIO_SPAZIATI_STRETTI": (
+            "Spaziati {numero} oggetti sull'asse {asse}: si sovrappongono un po'."
+        ),
+        "ERRORE_ALLINEA": "Non è stato possibile allineare gli oggetti.",
+        "ERRORE_ALLINEA_POCHI": "Per allineare servono almeno due oggetti scelti.",
+        "ERRORE_ALLINEA_INVARIATI": "Gli oggetti scelti sono già a posto: non c'è nulla da spostare.",
+        "ERRORE_SPAZIA_POCHI": "Per spaziare in modo uguale servono almeno tre oggetti scelti.",
+        "AZIONE_RAGGRUPPA": "Raggruppa la scelta",
+        "AIUTO_RAGGRUPPA": "Crea un gruppo con gli oggetti scelti: si scelgono e si nascondono insieme.",
+        "DIALOGO_RAGGRUPPA": (
+            "Gli oggetti scelti finiscono in un gruppo con questo nome: da qui in poi si scelgono "
+            "e si nascondono tutti insieme. Nessun oggetto viene eliminato."
+        ),
+        "ETICHETTA_GRUPPO_NOME": "Nome del gruppo",
+        "AIUTO_GRUPPO_NOME": "Il nome che vedrai nell'elenco dei gruppi.",
+        "MESSAGGIO_GRUPPO": "Gruppo creato: {nome}, con {numero} oggetti.",
+        "AIUTO_GRUPPI": (
+            "Un gruppo raccoglie oggetti imparentati: si sceglie e si nasconde tutto insieme."
+        ),
+        "ETICHETTA_GRUPPO_RIGA": "{nome}: {numero} oggetti",
+        "AZIONE_SCEGLI_GRUPPO": "Scegli il gruppo",
+        "AIUTO_SCEGLI_GRUPPO": "Sceglie tutti gli oggetti del gruppo {nome}.",
+        "MESSAGGIO_GRUPPO_SCELTO": "Scelti {numero} oggetti del gruppo {nome}.",
+        "MESSAGGIO_GRUPPO_GRUPPO_VUOTO": "Il gruppo {nome} non ha oggetti da scegliere.",
+        "AZIONE_ALTERNA_GRUPPO": "Mostra o nascondi il gruppo",
+        "AIUTO_ALTERNA_GRUPPO": "Nasconde o fa ricomparire tutti gli oggetti del gruppo {nome}.",
+        "MESSAGGIO_GRUPPO_MOSTRATO": "Gruppo {nome}: visibile.",
+        "MESSAGGIO_GRUPPO_NASCOSTO": "Gruppo {nome}: nascosto.",
+        "AZIONE_TOGLI_DAL_GRUPPO": "Togli dal gruppo",
+        "AIUTO_TOGLI_DAL_GRUPPO": "Riporta gli oggetti scelti nella raccolta principale della scena.",
+        "MESSAGGIO_TOGLI_GRUPPO": "Tolti dal gruppo {numero} oggetti.",
+        "MESSAGGIO_TOGLI_GRUPPO_NESSUNO": "Gli oggetti scelti non sono in un gruppo.",
+        "ERRORE_GRUPPO": "Non è stato possibile creare il gruppo.",
+        "ERRORE_GRUPPO_SENZA_OGGETTI": "Prima scegli gli oggetti da raggruppare.",
+        "ERRORE_GRUPPO_ASSENTE": "Questo gruppo non esiste più.",
+        "ERRORE_TOGLI_GRUPPO": "Non è stato possibile togliere gli oggetti dal gruppo.",
+        "AZIONE_TOGLI_MODIFICHE": "Togli le modifiche",
+        "AIUTO_TOGLI_MODIFICHE": "Toglie le modifiche non applicate: la forma torna com'era.",
+        "ETICHETTA_MODIFICHE": "Modifiche non applicate: {numero}",
+        "AIUTO_MODIFICHE": (
+            "Sono modifiche che si vedono ma non sono state applicate: la forma di partenza è "
+            "sempre quella che hai creato."
+        ),
+        "AZIONE_TOGLI_MODIFICA": "Togli",
+        "AIUTO_TOGLI_MODIFICA": "Toglie questa modifica e rimette la forma com'era.",
+        "MESSAGGIO_MODIFICHE_TOLTE": "Tolte {numero} modifiche: la forma è tornata com'era.",
+        "MESSAGGIO_MODIFICA_TOLTA": "Tolta la modifica: la forma è tornata com'era.",
+        "MESSAGGIO_MODIFICHE_NESSUNA": "Questo oggetto non ha modifiche da togliere.",
+        "AVVISO_SERIE_SENZA_CENTRO": "Manca il centro del giro: le copie sono tutte sovrapposte.",
+        "AVVISO_TAGLIO_SENZA_OGGETTO": "Manca l'oggetto da tagliare: la modifica non fa nulla.",
+        "MESSAGGIO_MODIFICATORE_TOLTO": "Modifica tolta: {nome}.",
+        "PAROLA_MOD_BEVEL": "Arrotondamento degli spigoli",
+        "PAROLA_MOD_SUBSURF": "Forma più arrotondata",
+        "PAROLA_MOD_MIRROR": "Specchio",
+        "PAROLA_MOD_ARRAY": "Ripetizione",
+        "PAROLA_MOD_SOLIDIFY": "Spessore",
+        "PAROLA_MOD_BOOLEAN": "Unione o taglio",
+        "PAROLA_MOD_ALTRO": "Modifica",
+        # Guida passo passo: la casetta.
+        "GUIDA_CASETTA_TITOLO": "Una casetta in 13 passi",
+        "GUIDA_CASETTA_DESCRIZIONE": (
+            "Tre forme semplici, unite e raggruppate. Ogni passo spiega che cosa sta per "
+            "succedere prima di farlo."
+        ),
+        "NOME_CASETTA_CORPO": "Corpo",
+        "NOME_CASETTA_TETTO": "Tetto",
+        "NOME_CASETTA_CAMINO": "Camino",
+        "NOME_CASETTA_GRUPPO": "Casetta",
+        "AZIONE_GUIDA_INIZIA": "Inizia la guida",
+        "AIUTO_GUIDA_INIZIA": "Apre la guida passo passo: nessuna modifica viene fatta adesso.",
+        "AZIONE_GUIDA_ESEGUI": "Fai questo passo",
+        "AIUTO_GUIDA_ESEGUI": "Esegue il passo mostrato, con gli stessi comandi dei pulsanti.",
+        "AZIONE_GUIDA_AVANTI": "Avanti",
+        "AIUTO_GUIDA_AVANTI": "Passa al passo successivo, anche senza eseguirlo.",
+        "AZIONE_GUIDA_INDIETRO": "Indietro",
+        "AIUTO_GUIDA_INDIETRO": "Torna al passo precedente.",
+        "AZIONE_GUIDA_CHIUDI": "Chiudi la guida",
+        "AIUTO_GUIDA_CHIUDI": "Chiude la guida: la scena resta come è.",
+        "ETICHETTA_GUIDA_PASSO": "Passo {numero} di {totale}",
+        "ETICHETTA_GUIDA_FINITA": "Guida completata: la casetta è pronta.",
+        "MESSAGGIO_GUIDA_INIZIO": "Guida avviata: una casetta. {totale} passi.",
+        "MESSAGGIO_GUIDA_PASSO_FATTO": "Passo {numero} di {totale}: fatto.",
+        "MESSAGGIO_GUIDA_FINE": "Guida completata: la casetta è pronta.",
+        "MESSAGGIO_GUIDA_CHIUSA": "Guida chiusa.",
+        "ERRORE_GUIDA_ASSENTE": "Questa guida non è disponibile.",
+        "ERRORE_GUIDA_SELEZIONE": (
+            "La guida non trova l'oggetto {nome}: forse è stato rinominato o eliminato."
+        ),
+        "AIUTO_GUIDA_OGGETTI": "La guida crea gli oggetti che le servono: nessun passaggio è obbligatorio.",
+        "GUIDA_CASETTA_CORPO_TITOLO": "Il corpo della casa",
+        "GUIDA_CASETTA_CORPO_SPIEGAZIONE": (
+            "Aggiunge un cubo grande 2 m e lo chiama Corpo: sarà il corpo della casa."
+        ),
+        "GUIDA_CASETTA_CORPO_CENTRO_TITOLO": "Il corpo al centro",
+        "GUIDA_CASETTA_CORPO_CENTRO_SPIEGAZIONE": (
+            "Porta il corpo al centro della scena, così la casa cresce attorno al punto di riferimento."
+        ),
+        "GUIDA_CASETTA_CORPO_PIANO_TITOLO": "Il corpo appoggiato",
+        "GUIDA_CASETTA_CORPO_PIANO_SPIEGAZIONE": (
+            "Fa toccare il piano di lavoro al corpo: la casa non resta sospesa per aria."
+        ),
+        "GUIDA_CASETTA_TETTO_TITOLO": "Il tetto",
+        "GUIDA_CASETTA_TETTO_SPIEGAZIONE": (
+            "Aggiunge un cono grande 2 m e lo chiama Tetto: la punta sarà il tetto."
+        ),
+        "GUIDA_CASETTA_TETTO_CENTRO_TITOLO": "Il tetto al centro",
+        "GUIDA_CASETTA_TETTO_CENTRO_SPIEGAZIONE": "Porta il tetto sopra il corpo della casa.",
+        "GUIDA_CASETTA_TETTO_PIANO_TITOLO": "Il tetto appoggiato",
+        "GUIDA_CASETTA_TETTO_PIANO_SPIEGAZIONE": (
+            "Appoggia il tetto: da qui si alza di quanto serve, un passo alla volta."
+        ),
+        "GUIDA_CASETTA_TETTO_ALTO_TITOLO": "Il tetto in alto",
+        "GUIDA_CASETTA_TETTO_ALTO_SPIEGAZIONE": (
+            "Alza il tetto di 1,90 m: la sua base entra un po' dentro il corpo, così le due forme "
+            "si toccano davvero."
+        ),
+        "GUIDA_CASETTA_CAMINO_TITOLO": "Il camino",
+        "GUIDA_CASETTA_CAMINO_SPIEGAZIONE": (
+            "Aggiunge un cilindro piccolo (0,50 m) e lo chiama Camino."
+        ),
+        "GUIDA_CASETTA_CAMINO_CENTRO_TITOLO": "Il camino al centro",
+        "GUIDA_CASETTA_CAMINO_CENTRO_SPIEGAZIONE": "Porta il camino sopra la casa.",
+        "GUIDA_CASETTA_CAMINO_ALTO_TITOLO": "Il camino in alto",
+        "GUIDA_CASETTA_CAMINO_ALTO_SPIEGAZIONE": (
+            "Alza il camino di 2,55 m: entra nel tetto e spunta dalla falda."
+        ),
+        "GUIDA_CASETTA_CAMINO_LATO_TITOLO": "Il camino di lato",
+        "GUIDA_CASETTA_CAMINO_LATO_SPIEGAZIONE": (
+            "Sposta il camino di 0,50 m verso destra, come un camino vero sul tetto."
+        ),
+        "GUIDA_CASETTA_UNIRE_TITOLO": "Unisci tetto e corpo",
+        "GUIDA_CASETTA_UNIRE_SPIEGAZIONE": (
+            "Il tetto diventa un tutt'uno con il corpo. Il cono resta nella scena, nascosto: "
+            "la modifica si può togliere."
+        ),
+        "GUIDA_CASETTA_GRUPPO_TITOLO": "Raggruppa la casetta",
+        "GUIDA_CASETTA_GRUPPO_SPIEGAZIONE": (
+            "Raccoglie la casa e il camino in un gruppo: da qui in poi si scelgono e si "
+            "nascondono insieme. La forma del tetto, usata per unire, resta nascosta."
+        ),
+        # Pannello "Dai forma": spiegazioni brevi, che stanno nella barra stretta.
+        "ETICHETTA_MODELLA_SCELTA": "Dai forma alla forma attiva",
+        "ETICHETTA_MODELLA_SCELTI": "Dai forma alla forma attiva",
+        "NOTA_MODELLA_PIU_SCELTI": (
+            "Hai scelto {numero} oggetti: gli strumenti qui sotto lavorano sulla forma "
+            "attiva, cioè l'ultima scelta."
+        ),
+        "ETICHETTA_MODELLA_NIENTE": "Scegli prima una forma da rifinire.",
+        "AIUTO_MODELLA_NIENTE": "Scegli la forma nell'elenco dei pannelli qui sopra: gli strumenti di questo pannello lavorano sulla scelta.",
+        "NOTA_ASPETTO_SUPERFICIE": "Qui cambia solo l'aspetto: le facce restano le stesse.",
+        "NOTA_ALLINEA": "Allinea mette in riga; Spazia mette alla stessa distanza.",
+        "NOTA_GRUPPI": "Un gruppo si sceglie e si nasconde tutto insieme.",
+        "NOTA_MODIFICHE": "La forma di partenza resta: si tolgono quando vuoi.",
+        "NOTA_MODIFICHE_NIENTE": "Nessuna modifica da togliere su questa forma.",
+        "NOTA_UNISCI_SCELTA": (
+            "Scegli due forme: quella attiva è la principale, l'altra la taglia o si unisce."
+        ),
+        "NOTA_UNISCI_MODIFICATORE": "L'unione e il taglio sono modifiche non applicate: si tolgono dalle modifiche qui sotto.",
+        "NOTA_GUIDA_CASETTA": "Tre forme diventano una casetta, un passo alla volta.",
+        "ETICHETTA_GRUPPI_VUOTA": "Non ci sono ancora gruppi: scegli e usa Raggruppa.",
+        "ETICHETTA_MANCANO_GRUPPI": "Altri {totali} gruppi non mostrati.",
+        "ETICHETTA_OPZIONI_AVANZATE": "Opzioni avanzate",
+        "ETICHETTA_SPIGOLI_TROVATI": "Spigoli da arrotondare: {numero}",
+        "MESSAGGIO_SUPERFICIE_INVARIATA": "La superficie era già mostrata così: non c'è nulla da cambiare.",
+        "AIUTO_ASSE_X": "La X va da sinistra a destra.",
+        "AIUTO_ASSE_Y": "La Y va dalla parte vicina a quella lontana.",
+        "AIUTO_ASSE_Z": "La Z va dal basso verso l'alto.",
+        # Errori degli strumenti guidati che spiegano che cosa manca.
+        "ERRORE_SERVE_FORMA_ALTRO": "Qui si danno forma alle forme: questo oggetto è di un altro tipo.",
+        "ERRORE_CONVERTI_NIENTE": "Questo oggetto è già una forma: non serve trasformarlo.",
+        "ERRORE_CONVERTI_VUOTA": "La trasformazione non ha prodotto una forma utilizzabile.",
+        "ERRORE_UNISCI_NESSUN_CAMBIO": "Le due forme non si toccano: unisci o taglia forme che si sovrappongono.",
+        "ERRORE_GUIDA_BLOCCATO": "L'oggetto {nome} è bloccato: sbloccalo per continuare la guida.",
+        "ERRORE_GUIDA_PASSO": "Questo passo non è riuscito: la guida si ferma qui.",
+        "ERRORE_GUIDA_FINITA": "La guida è già arrivata in fondo: chiudila per rifarla.",
+        "LOG_ERRORE_GUIDA": "Un passo della guida non è riuscito.",
+        "AVVISO_LIVELLI_RIDOTTI": "Ho usato meno livelli per non appesantire la forma.",
+        "MESSAGGIO_FORMA_LISCIA_GIA": "La forma è già arrotondata a questo livello: non c'è altro da fare.",
+        "AVVISO_SELEZIONE_PARZIALE": "{numero} oggetti erano nascosti o bloccati: sono rimasti fuori.",
+        "AVVISO_SPESSORE_FORMA_CHIUSA": "La forma era già chiusa: lo spessore crea una parete interna.",
         # Comandi tecnici della modalità completa.
         "ETICHETTA_NOME": "Nome",
         "ETICHETTA_POSIZIONE": "Posizione",

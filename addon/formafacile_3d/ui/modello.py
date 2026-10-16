@@ -103,8 +103,42 @@ class Oggetto:
     nome_dati: str = ""
     vertici: int = 0
     facce: int = 0
+    # Aspetto della superficie: `True` quando la forma si vede liscia.
+    liscio: bool = False
     potenza_luce: float = 0.0
     telecamera_principale: bool = False
+
+
+@dataclass(frozen=True)
+class Raccolta:
+    """Fotografia di un gruppo della scena, per l'interfaccia.
+
+    Un gruppo di FormaFacile è una raccolta di Blender: si sceglie e si nasconde
+    tutto insieme. L'interfaccia ne ha bisogno per mostrare l'elenco dei gruppi
+    senza sapere nulla di Blender.
+    """
+
+    chiave: str
+    nome: str
+    quanti: int = 0
+    scelti: int = 0
+    nascosto: bool = False
+
+
+@dataclass(frozen=True)
+class Modificatore:
+    """Fotografia di una modifica non applicata, letta dall'oggetto attivo.
+
+    `parola` è il nome semplice del tipo di modifica ("Specchio"), `problema` è
+    la spiegazione di quando la modifica non fa quello che promette (per
+    esempio una serie senza il centro del giro).
+    """
+
+    chiave: str
+    nome: str
+    parola: str = ""
+    icona: str = ""
+    problema: str = ""
 
 
 @dataclass(frozen=True)
@@ -133,6 +167,14 @@ class Contesto:
     def unita_lunghezza_o_predefinita(self) -> str:
         """Unità di lunghezza, con ripiego sui metri quando la scena non ne usa."""
         return self.unita_lunghezza or "m"
+
+    # Gruppi della scena e modifiche non applicate sull'oggetto attivo: le
+    # legge `ui/vista.py` dai servizi di Blender e l'interfaccia le disegna.
+    raccolte: tuple[Raccolta, ...] = ()
+    modificatori: tuple[Modificatore, ...] = ()
+    # Guida passo passo in corso: la chiave e il passo mostrato.
+    guida: str = ""
+    passo_guida: int = 0
 
     # Campi derivati, calcolati una volta sola.
     elenco: tuple[Oggetto, ...] = field(default=(), repr=False)

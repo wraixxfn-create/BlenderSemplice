@@ -6,6 +6,7 @@ non la struttura interna di Blender:
 * Azioni principali: costruisci, guarda la scena, annulla e ripeti;
 * La mia scena: elenco oggetti, scelta, visibilità, rinomina;
 * Oggetto scelto: comandi che cambiano in base alla scelta;
+* Dai forma: strumenti guidati e guida passo passo per rifinire le forme;
 * Comandi di Blender: solo nella modalità completa.
 """
 
@@ -72,13 +73,23 @@ class FORMAFACILE_PT_oggetto(_PannelloFormaFacile):
     chiave_piano = "oggetto"
 
 
+class FORMAFACILE_PT_modella(_PannelloFormaFacile):
+    """Strumenti guidati per rifinire una forma, spiegati passo per passo."""
+
+    bl_label = TESTI["TITOLO_PANNELLO_MODELLA"]
+    bl_idname = "FORMAFACILE_PT_modella"
+    bl_parent_id = "FORMAFACILE_PT_principale"
+    bl_order = 3
+    chiave_piano = "modella"
+
+
 class FORMAFACILE_PT_completo(_PannelloFormaFacile):
     """Comandi tecnici di Blender, visibili solo nella modalità completa."""
 
     bl_label = TESTI["TITOLO_PANNELLO_COMPLETO"]
     bl_idname = "FORMAFACILE_PT_completo"
     bl_parent_id = "FORMAFACILE_PT_principale"
-    bl_order = 3
+    bl_order = 4
     bl_options = {"DEFAULT_CLOSED"}
     chiave_piano = "completo"
 
@@ -110,6 +121,7 @@ CLASSI = (
     FORMAFACILE_PT_principale,
     FORMAFACILE_PT_scena,
     FORMAFACILE_PT_oggetto,
+    FORMAFACILE_PT_modella,
     FORMAFACILE_PT_completo,
     FORMAFACILE_HT_barra,
 )

@@ -56,6 +56,78 @@ MOSTRA_MANIGLIE = (
 # invisibili e difficili da riprendere, quindi il comando avvisa e non applica.
 SCALA_MINIMA = 0.01
 
+# Strumenti guidati di modellazione. Ogni valore ha un limite prudente: gli
+# strumenti lavorano su forme appena create, non su modelli complessi, e un
+# valore esagerato rovinerebbe la forma invece di migliorarla.
+SMUSSO_FORZA_PREDEFINITA = 3
+SMUSSO_FORZA_MINIMA = 1
+SMUSSO_FORZA_MASSIMA = 5
+# Raggio dello smusso: una frazione della dimensione più piccola della forma,
+# mai oltre un quinto, così lo spigolo si ammorbidisce senza sparire.
+SMUSSO_RAPPORTO_PER_FORZA = 0.04
+SMUSSO_RAPPORTO_MASSIMO = 0.20
+SMUSSO_RAGGIO_MINIMO = 0.001
+SMUSSO_SEGMENTI_MASSIMI = 6
+SMUSSO_ANGOLO_PREDEFINITO_GRADI = 30.0
+
+# Superficie: i livelli di suddivisione moltiplicano le facce per quattro
+# ognuno, quindi oltre il terzo livello una forma semplice diventa pesante.
+LISCIO_LIVELLI_PREDEFINITI = 2
+LISCIO_LIVELLI_MASSIMI = 3
+LISCIO_FACCE_MASSIME = 200_000
+SIMIL_LISCIO_LIVELLI_PREDEFINITI = 1
+
+# Specchio: asse predefinito e tolleranza con cui si riconosce una forma già
+# simmetrica (sotto questa distanza i due lati si considerano uguali).
+SPECCHIO_ASSE_PREDEFINITO = "x"
+SPECCHIO_TOLLERANZA = 1e-4
+
+# Ripetizione: quante copie e a che distanza.
+RIPETI_COPIE_PREDEFINITE = 4
+RIPETI_COPIE_MINIME = 2
+RIPETI_COPIE_MASSIME = 50
+RIPETI_SPAZIATURA_MINIMA = 0.01
+RIPETI_SPAZIATURA_MASSIMA = 100.0
+RIPETI_DISTANZA_PREDEFINITA = 1.0
+RIPETI_MODO_PREDEFINITO = "fila"
+RIPETI_ASSE_PREDEFINITO = "y"
+# Centro del giro: il cursore 3D è il punto di riferimento che FormaFacile usa
+# già per creare gli oggetti; il centro della scena resta come alternativa.
+RIPETI_CENTRO_PREDEFINITO = "cursore"
+
+# Spessore della parete: una frazione della dimensione più piccola, per non
+# far collassare la forma su se stessa.
+SPESSORE_RAPPORTO_PREDEFINITO = 0.10
+SPESSORE_RAPPORTO_MASSIMO = 0.40
+SPESSORE_MINIMO = 0.005
+SPESSORE_VERSO_PREDEFINITO = "dentro"
+
+# Unione e taglio: il risolutore esatto è quello che gestisce i casi normali
+# (forme che si toccano, si sovrappongono o si attraversano).
+BOOLEANA_SOLVER = "EXACT"
+# Quante facce può avere al massimo il risultato di un'unione o di un taglio:
+# oltre questa soglia il comando si ferma invece di bloccare Blender.
+BOOLEANA_FACCE_MASSIME = 500_000
+
+# Allineamento e spaziatura.
+ALLINEA_ASSE_PREDEFINITO = "x"
+ALLINEA_BORDO_PREDEFINITO = "inizio"
+ALLINEA_RIFERIMENTO_PREDEFINITO = "bordo"
+ALLINEA_OGGETTI_MINIMI = 2
+# Unione e taglio lavorano su due forme: la principale (l'attiva) e l'attrezzo.
+UNISCI_OGGETTI_ESATTI = 2
+SPAZIA_OGGETTI_MINIMI = 3
+# Tolleranza con cui due bordi si considerano già allineati o già spaziati.
+ALLINEA_TOLLERANZA = 1e-6
+
+# Gruppi: prefisso dei nomi creati e numero massimo di gruppi mostrati.
+GRUPPO_NOME_BASE = "Gruppo"
+GRUPPO_LIMITE_ELENCO = 8
+GRUPPO_OGGETTI_MINIMI = 1
+
+# Guida passo passo.
+GUIDA_PRINCIPALE = "casetta"
+
 # Dimensioni dell'elenco oggetti: evita pannelli lentissimi con scene grandi.
 LIMITE_ELENCO_SEMPLICE = 12
 LIMITE_ELENCO_COMPLETA = 24
@@ -86,6 +158,9 @@ CAMPO_MODALITA = "formafacile.modalita"
 CAMPO_FILTRO = "formafacile.filtro"
 CAMPO_PASSO = "formafacile.passo"
 CAMPO_GRANDEZZA_FORMA = "formafacile.grandezza_forma"
+CAMPO_ASSE_ALLINEA = "formafacile.asse_allinea"
+CAMPO_BORDO_ALLINEA = "formafacile.bordo_allinea"
+CAMPO_RIFERIMENTO_ALLINEA = "formafacile.riferimento_allinea"
 CAMPO_MESSAGGIO = "formafacile.messaggio"
 CAMPO_TEMPO_MESSAGGIO = "formafacile.tempo_messaggio"
 
@@ -94,6 +169,9 @@ CAMPO_TEMPO_MESSAGGIO = "formafacile.tempo_messaggio"
 LUNGHEZZA_MASSIMA_ETICHETTA = 60
 LUNGHEZZA_MASSIMA_AZIONE = 26
 LUNGHEZZA_MASSIMA_AZIONE_SINGOLA = 34
+# Le finestrelle di conferma sono più strette della barra laterale: le
+# spiegazioni si spezzano prima, altrimenti verrebbero tagliate.
+LUNGHEZZA_MASSIMA_FINESTRA = 42
 
 
 def imposta_interfaccia_italiana(bpy_module: object) -> bool:
