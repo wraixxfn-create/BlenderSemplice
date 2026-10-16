@@ -24,8 +24,16 @@ supporto_finto.prepara_import_puro()
 
 from formafacile_3d import comandi, configuration  # noqa: E402
 from formafacile_3d.localization import TESTI  # noqa: E402
+from formafacile_3d.scene import testi as testi_lunghi  # noqa: E402
 from formafacile_3d.ui import icone, modello, piano  # noqa: E402
-from formafacile_3d.ui.modello import Azione, Campo, Contesto, Etichetta, Oggetto  # noqa: E402
+from formafacile_3d.ui.modello import (  # noqa: E402
+    Azione,
+    Campo,
+    Contesto,
+    Etichetta,
+    Oggetto,
+    Riga,
+)
 
 
 def oggetto(
@@ -57,9 +65,52 @@ def oggetto(
     )
 
 
+def raccolta(nome: str, *, quanti: int = 3, scelti: int = 0, nascosto: bool = False):
+    return modello.Raccolta(
+        chiave=nome, nome=nome, quanti=quanti, scelti=scelti, nascosto=nascosto
+    )
+
+
+def modifica(nome: str, tipo: str = "BEVEL", problema: str = ""):
+    """Modifica non applicata, con le stesse parole che usa il pannello."""
+    return modello.Modificatore(
+        chiave=nome,
+        nome=nome,
+        parola=icone.parola_modificatore(tipo),
+        icona=icone.icona_modificatore(tipo),
+        problema=problema,
+    )
+
+
 def contesto(*oggetti: Oggetto, **valori: object) -> Contesto:
     valori.setdefault("oggetti", oggetti)
     return modello.crea_contesto(**valori)  # type: ignore[arg-type]
+
+
+# Strumenti guidati sempre presenti: i pulsanti dei gruppi e delle modifiche
+# compaiono solo quando ci sono gruppi o modifiche da mostrare.
+STRUMENTI_SENZA_ELENCHI = tuple(
+    idname
+    for idname in comandi.ID_STRUMENTI_GUIDATI
+    if idname
+    not in (comandi.ID_SCEGLI_GRUPPO, comandi.ID_ALTERNA_GRUPPO, comandi.ID_TOGLI_MODIFICHE)
+)
+
+# Chiavi dei pannelli nell'ordine in cui compaiono, secondo la modalità.
+PANNELLI_SEMPLICE = ("principale", "scena", "oggetto", "modella")
+PANNELLI = (*PANNELLI_SEMPLICE, "completo")
+
+
+def riga_di(contesto_ui: Contesto, chiave: str, idname: str) -> Riga:
+    """Prima riga di un pannello che contiene il comando indicato."""
+    for gruppo in pannello(contesto_ui, chiave).gruppi:
+        for riga in gruppo.righe:
+            if any(
+                isinstance(elemento, Azione) and elemento.idname == idname
+                for elemento in riga.elementi
+            ):
+                return riga
+    raise AssertionError(f"Riga assente: {idname}")
 
 
 def pannello(contesto_ui: Contesto, chiave: str) -> piano.Pannello:
@@ -101,16 +152,16 @@ def identificatori(contesto_ui: Contesto, chiave: str) -> list[str]:
 
 
 class TestStrutturaDelPiano(unittest.TestCase):
-    def test_modalita_semplice_mostra_tre_pannelli(self):
+    def test_modalita_semplice_mostra_i_pannelli_dei_principianti(self):
         chiavi = [p.chiave for p in piano.costruisci_piano(contesto())]
-        self.assertEqual(chiavi, ["principale", "scena", "oggetto"])
+        self.assertEqual(chiavi, list(PANNELLI_SEMPLICE))
 
     def test_modalita_completa_aggiunge_il_pannello_tecnico(self):
         chiavi = [
             p.chiave
             for p in piano.costruisci_piano(contesto(modalita=configuration.MODALITA_COMPLETA))
         ]
-        self.assertEqual(chiavi, ["principale", "scena", "oggetto", "completo"])
+        self.assertEqual(chiavi, list(PANNELLI))
 
     def test_l_interfaccia_usa_solo_i_comandi_dichiarati(self):
         """La tabella dei comandi è l'unica fonte: niente nomi inventati."""
@@ -151,7 +202,7 @@ class TestStrutturaDelPiano(unittest.TestCase):
             oggetto("Luce", "LIGHT", scelto=True),
             modalita=configuration.MODALITA_COMPLETA,
         )
-        for chiave in ("principale", "scena", "oggetto", "completo"):
+        for chiave in PANNELLI:
             for azione in elementi(contesto_ui, chiave, Azione):
                 with self.subTest(chiave=chiave, comando=azione.idname):
                     if azione.idname.startswith("formafacile."):
@@ -582,7 +633,7 @@ class TestLunghezzaDeiTesti(unittest.TestCase):
         )
 
     def test_etichette_brevi(self):
-        for chiave in ("principale", "scena", "oggetto", "completo"):
+        for chiave in PANNELLI:
             for elemento in elementi(self.contesto_ricco(), chiave, Etichetta):
                 with self.subTest(chiave=chiave, testo=elemento.testo):
                     self.assertLessEqual(
@@ -590,9 +641,18 @@ class TestLunghezzaDeiTesti(unittest.TestCase):
                     )
 
     def test_pulsanti_brevi_secondo_la_riga(self):
-        contesto_ui = self.contesto_ricco()
-        nomi = {o.nome for o in contesto_ui.oggetti}
-        for chiave in ("principale", "scena", "oggetto", "completo"):
+        contesto_ui = modello.crea_contesto(
+            oggetti=self.contesto_ricco().oggetti,
+            raccolte=(raccolta("Casetta"),),
+            modificatori=(modifica("Arrotondamento"),),
+            guida="casetta",
+            passo_guida=0,
+            modalita=configuration.MODALITA_COMPLETA,
+        )
+        # I nomi scritti dall'utente (oggetti e gruppi) non sono testi
+        # dell'interfaccia: possono essere lunghi quanto vuole l'utente.
+        nomi = {o.nome for o in contesto_ui.oggetti} | {r.nome for r in contesto_ui.raccolte}
+        for chiave in PANNELLI:
             for gruppo in pannello(contesto_ui, chiave).gruppi:
                 for riga in gruppo.righe:
                     azioni = [e for e in riga.elementi if isinstance(e, Azione)]
@@ -602,7 +662,10 @@ class TestLunghezzaDeiTesti(unittest.TestCase):
                         else configuration.LUNGHEZZA_MASSIMA_AZIONE_SINGOLA
                     )
                     for azione in azioni:
-                        if azione.testo in nomi:
+                        # I nomi scritti dall'utente non sono testi
+                        # dell'interfaccia, e i pulsanti con la sola icona non
+                        # scrivono nulla: il testo resta come spiegazione.
+                        if azione.testo in nomi or azione.solo_icona:
                             continue
                         with self.subTest(chiave=chiave, testo=azione.testo):
                             self.assertLessEqual(len(azione.testo), limite)
@@ -740,6 +803,242 @@ class TestFormeENumeri(unittest.TestCase):
         )
         testo = " ".join(testi(contesto_ui, "oggetto"))
         self.assertIn(f"{TESTI['ETICHETTA_ROTAZIONE']} (rad)", testo)
+
+
+
+
+class TestPannelloDaiForma(unittest.TestCase):
+    """Il pannello "Dai forma": strumenti guidati, gruppi, modifiche e guida."""
+
+    def completo(self, *oggetti: Oggetto, **valori: object) -> Contesto:
+        valori.setdefault("modalita", configuration.MODALITA_COMPLETA)
+        return contesto(*oggetti, **valori)
+
+    def test_senza_scelta_spiega_cosa_fare(self):
+        contesto_ui = contesto()
+        testo = testi(contesto_ui, "modella")
+        self.assertIn(TESTI["ETICHETTA_MODELLA_NIENTE"], testo)
+        self.assertNotIn(TESTI["ETICHETTA_MODELLA_SCELTA"], testo)
+        # Gli strumenti restano visibili ma spenti: si vede che esistono.
+        visibili = identificatori(contesto_ui, "modella")
+        for idname in STRUMENTI_SENZA_ELENCHI:
+            with self.subTest(comando=idname):
+                self.assertIn(idname, visibili)
+                self.assertTrue(riga_di(contesto_ui, "modella", idname).disabilitata)
+
+    def test_con_una_forma_scelta_gli_strumenti_si_accendono(self):
+        contesto_ui = contesto(oggetto("Cubo", scelto=True, attivo=True))
+        testo = testi(contesto_ui, "modella")
+        self.assertIn(TESTI["ETICHETTA_MODELLA_SCELTA"], testo)
+        self.assertIn("Cubo", testo)
+        for idname in (comandi.ID_AMMORBIDISCI_SPIGOLI, comandi.ID_SPECCHIA):
+            with self.subTest(comando=idname):
+                self.assertFalse(riga_di(contesto_ui, "modella", idname).disabilitata)
+
+    def test_con_piu_forme_scelte_si_unisce_e_si_allinea(self):
+        due = contesto(
+            oggetto("Cubo", scelto=True, attivo=True), oggetto("Sfera", scelto=True)
+        )
+        self.assertIn(
+            TESTI["ETICHETTA_MODELLA_SCELTI"].format(numero=2), testi(due, "modella")
+        )
+        self.assertFalse(riga_di(due, "modella", comandi.ID_UNISCI_FORME).disabilitata)
+        self.assertFalse(riga_di(due, "modella", comandi.ID_ALLINEA).disabilitata)
+
+        una = contesto(oggetto("Cubo", scelto=True, attivo=True))
+        self.assertTrue(riga_di(una, "modella", comandi.ID_UNISCI_FORME).disabilitata)
+        self.assertTrue(riga_di(una, "modella", comandi.ID_ALLINEA).disabilitata)
+
+    def test_la_trasformazione_in_forma_compare_solo_per_testi_e_curve(self):
+        testo_scritta = contesto(
+            oggetto("Scritta", "FONT", scelto=True, attivo=True)
+        )
+        self.assertFalse(
+            riga_di(testo_scritta, "modella", comandi.ID_CONVERTI_IN_FORMA).disabilitata
+        )
+        contesto_ui = contesto(oggetto("Cubo", scelto=True, attivo=True))
+        self.assertTrue(
+            riga_di(contesto_ui, "modella", comandi.ID_CONVERTI_IN_FORMA).disabilitata
+        )
+
+    def test_ogni_strumento_guidato_ha_il_suo_pulsante(self):
+        contesto_ui = contesto(
+            oggetto("Cubo", scelto=True, attivo=True), modalita=configuration.MODALITA_COMPLETA
+        )
+        visibili = identificatori(contesto_ui, "modella")
+        for idname in STRUMENTI_SENZA_ELENCHI:
+            with self.subTest(comando=idname):
+                self.assertIn(idname, visibili)
+        for idname in comandi.ICONE_STRUMENTI_GUIDATI:
+            self.assertIn(idname, comandi.ID_STRUMENTI_GUIDATI)
+
+    def test_i_gruppi_si_sceglono_e_si_nascondono_dalla_loro_riga(self):
+        contesto_ui = contesto(
+            oggetto("Cubo", scelto=True, attivo=True),
+            raccolte=(raccolta("Casetta", quanti=3), raccolta("Alberi", quanti=2, nascosto=True)),
+        )
+        testo = testi(contesto_ui, "modella")
+        self.assertIn(TESTI["ETICHETTA_GRUPPO_RIGA"].format(nome="Casetta", numero=3), testo)
+
+        righe = [
+            riga
+            for gruppo in pannello(contesto_ui, "modella").gruppi
+            for riga in gruppo.righe
+            if any(
+                isinstance(elemento, Azione) and elemento.idname == comandi.ID_SCEGLI_GRUPPO
+                for elemento in riga.elementi
+            )
+        ]
+        scelte = [
+            elemento
+            for riga in righe
+            for elemento in riga.elementi
+            if isinstance(elemento, Azione) and elemento.idname == comandi.ID_SCEGLI_GRUPPO
+        ]
+        self.assertEqual(
+            [dict(azione.parametri)["gruppo"] for azione in scelte], ["Casetta", "Alberi"]
+        )
+        nascosti = [
+            elemento
+            for riga in righe
+            for elemento in riga.elementi
+            if isinstance(elemento, Azione) and elemento.idname == comandi.ID_ALTERNA_GRUPPO
+        ]
+        self.assertEqual(
+            [elemento.icona for elemento in nascosti], ["HIDE_OFF", "HIDE_ON"]
+        )
+
+    def test_senza_gruppi_lo_dice(self):
+        contesto_ui = contesto(oggetto("Cubo", scelto=True, attivo=True))
+        self.assertIn(TESTI["ETICHETTA_GRUPPI_VUOTA"], testi(contesto_ui, "modella"))
+
+    def test_le_modifiche_non_applicate_si_possono_togliere_una_per_una(self):
+        contesto_ui = contesto(
+            oggetto("Cubo", scelto=True, attivo=True),
+            modificatori=(
+                modifica("Smusso"),
+                modifica("Serie 1", tipo="ARRAY", problema=TESTI["AVVISO_SERIE_SENZA_CENTRO"]),
+            ),
+        )
+        testo = testi(contesto_ui, "modella")
+        self.assertIn(TESTI["ETICHETTA_MODIFICHE"].format(numero=2), testo)
+        self.assertIn(TESTI["PAROLA_MOD_BEVEL"], testo)
+        self.assertIn(TESTI["PAROLA_MOD_ARRAY"], testo)
+        self.assertIn(TESTI["AVVISO_SERIE_SENZA_CENTRO"], testo)
+
+        togli = [
+            elemento
+            for gruppo in pannello(contesto_ui, "modella").gruppi
+            for riga in gruppo.righe
+            for elemento in riga.elementi
+            if isinstance(elemento, Azione) and elemento.idname == comandi.ID_TOGLI_MODIFICHE
+        ]
+        self.assertEqual(len(togli), 3)
+        self.assertEqual(
+            dict(togli[0].parametri).get("modificatore"), "Smusso"
+        )
+        self.assertEqual(dict(togli[-1].parametri), {})
+
+    def test_senza_modifiche_lo_dice(self):
+        contesto_ui = contesto(oggetto("Cubo", scelto=True, attivo=True))
+        self.assertIn(TESTI["NOTA_MODIFICHE_NIENTE"], testi(contesto_ui, "modella"))
+
+    def test_le_impostazioni_dell_allineamento_sono_campi_della_scena(self):
+        contesto_ui = contesto(oggetto("Cubo", scelto=True, attivo=True))
+        campi = [campo for campo in elementi(contesto_ui, "modella", Campo)]
+        self.assertEqual(
+            [campo.proprieta for campo in campi],
+            [configuration.CAMPO_ASSE_ALLINEA, configuration.CAMPO_BORDO_ALLINEA],
+        )
+        for campo in campi:
+            self.assertEqual(campo.riferimento, configuration.RIFERIMENTO_SCENA)
+        self.assertTrue(all(campo.espanso for campo in campi))
+
+        completo = contesto(
+            oggetto("Cubo", scelto=True, attivo=True),
+            modalita=configuration.MODALITA_COMPLETA,
+        )
+        riferimento = [
+            campo
+            for campo in elementi(completo, "modella", Campo)
+            if campo.proprieta == configuration.CAMPO_RIFERIMENTO_ALLINEA
+        ]
+        self.assertEqual(len(riferimento), 1)
+        self.assertFalse(riferimento[0].espanso)
+
+    def test_la_guida_passo_passo_mostra_il_passo(self):
+        contesto_ui = contesto(guida="casetta", passo_guida=0)
+        testo = testi(contesto_ui, "modella")
+        self.assertIn(TESTI["ETICHETTA_GUIDA_PASSO"].format(numero=1, totale=13), testo)
+        self.assertIn(TESTI["GUIDA_CASETTA_CORPO_TITOLO"], testo)
+        visibili = identificatori(contesto_ui, "modella")
+        self.assertIn(comandi.ID_GUIDA_ESEGUI, visibili)
+        self.assertEqual(visibili.count(comandi.ID_GUIDA_NAVIGA), 3)
+
+    def test_la_guida_chiusa_invita_a_iniziare(self):
+        contesto_ui = contesto(oggetto("Cubo"))
+        testo = testi(contesto_ui, "modella")
+        self.assertIn(TESTI["NOTA_GUIDA_CASETTA"], testo)
+        self.assertIn(comandi.ID_GUIDA_APRI, identificatori(contesto_ui, "modella"))
+        self.assertNotIn(comandi.ID_GUIDA_ESEGUI, identificatori(contesto_ui, "modella"))
+
+    def test_la_guida_finita_lo_dice_e_non_propone_altri_passi(self):
+        contesto_ui = contesto(guida="casetta", passo_guida=13)
+        testo = testi(contesto_ui, "modella")
+        self.assertIn(TESTI["ETICHETTA_GUIDA_FINITA"], testo)
+        visibili = identificatori(contesto_ui, "modella")
+        self.assertNotIn(comandi.ID_GUIDA_ESEGUI, visibili)
+        self.assertIn(comandi.ID_GUIDA_NAVIGA, visibili)
+
+    def test_una_guida_che_non_esiste_non_rompe_il_pannello(self):
+        contesto_ui = contesto(guida="inesistente", passo_guida=4)
+        testo = testi(contesto_ui, "modella")
+        self.assertIn(TESTI["ERRORE_GUIDA_ASSENTE"], testo)
+        self.assertIn(comandi.ID_GUIDA_APRI, identificatori(contesto_ui, "modella"))
+
+    def test_in_modalita_semplice_nessun_nome_tecnico(self):
+        contesto_ui = contesto(
+            oggetto("Cubo", scelto=True, attivo=True),
+            modificatori=(modifica("Smusso"),),
+            raccolte=(raccolta("Casetta"),),
+        )
+        testo = " ".join(testi(contesto_ui, "modella"))
+        for parola in ("MESH", "location", "scale", "BEVEL", "SUBSURF", "SOLIDIFY"):
+            with self.subTest(parola=parola):
+                self.assertNotIn(parola, testo)
+
+
+class TestTestiLunghi(unittest.TestCase):
+    """Le spiegazioni lunghe si spezzano invece di sparire."""
+
+    def test_righe_di_testo_rispetta_la_larghezza(self):
+        testo = " ".join(["parola"] * 40)
+        righe = testi_lunghi.righe_di_testo(testo, 30)
+        self.assertGreater(len(righe), 1)
+        for riga in righe:
+            self.assertLessEqual(len(riga), 30)
+        self.assertEqual(" ".join(righe), testo)
+
+    def test_righe_di_testo_non_spezza_le_parole(self):
+        righe = testi_lunghi.righe_di_testo("parolalunghissima altra", 5)
+        self.assertEqual(righe, ("parolalunghissima", "altra"))
+
+    def test_righe_di_testo_ignora_le_righe_vuote(self):
+        self.assertEqual(testi_lunghi.righe_di_testo("uno\n\n\ndue", 10), ("uno", "due"))
+
+    def test_accorcia_segnala_il_taglio(self):
+        accorciato = testi_lunghi.accorcia("Nome molto lungo di un oggetto", 10)
+        self.assertLessEqual(len(accorciato), 10)
+        self.assertTrue(accorciato.endswith(testi_lunghi.SEGNO_ACCORCIATO))
+        self.assertEqual(testi_lunghi.accorcia("Corto", 10), "Corto")
+
+    def test_le_spiegazioni_del_pannello_sono_spezzate(self):
+        contesto_ui = contesto(guida="casetta", passo_guida=0)
+        for etichetta in elementi(contesto_ui, "modella", Etichetta):
+            with self.subTest(testo=etichetta.testo):
+                self.assertLessEqual(
+                    len(etichetta.testo), configuration.LUNGHEZZA_MASSIMA_ETICHETTA
+                )
 
 
 if __name__ == "__main__":
