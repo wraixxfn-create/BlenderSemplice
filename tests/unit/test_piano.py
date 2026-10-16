@@ -269,17 +269,35 @@ class TestElencoDellaScena(unittest.TestCase):
             " ".join(testi(contesto_ui, "scena")),
         )
 
-    def test_ogni_riga_ha_scegli_scelta_visibilita(self):
+    def test_ogni_riga_ha_scegli_scelta_visibilita_lucchetto(self):
         contesto_ui = contesto(oggetto("Cubo"))
         identificatori_elenco = identificatori(contesto_ui, "scena")
         for chiave in (
             comandi.ID_SCEGLI_OGGETTO,
             comandi.ID_ALTERNA_SCELTA,
             comandi.ID_ALTERNA_VISIBILITA,
+            comandi.ID_BLOCCA_SCELTA,
         ):
             with self.subTest(comando=chiave):
                 self.assertIn(chiave, identificatori_elenco)
         self.assertNotIn(comandi.ID_RINOMINA, identificatori_elenco)
+
+    def test_il_lucchetto_dell_elenco_dice_cosa_farà(self):
+        """Anche dall'elenco si può sbloccare un oggetto non scegliibile."""
+        righe_blocca = [
+            azione
+            for azione in elementi(contesto(oggetto("Cubo")), "scena", Azione)
+            if azione.idname == comandi.ID_BLOCCA_SCELTA
+        ]
+        self.assertEqual(len(righe_blocca), 1)
+        self.assertEqual(dict(righe_blocca[0].parametri), {"oggetto": "Cubo", "blocca": True})
+
+        righe_sblocca = [
+            azione
+            for azione in elementi(contesto(oggetto("Cubo", bloccato=True)), "scena", Azione)
+            if azione.idname == comandi.ID_BLOCCA_SCELTA
+        ]
+        self.assertEqual(dict(righe_sblocca[0].parametri), {"oggetto": "Cubo", "blocca": False})
 
     def test_rinomina_compare_solo_sull_oggetto_attivo(self):
         contesto_ui = contesto(oggetto("Cubo", attivo=True), oggetto("Sfera"))
@@ -602,6 +620,126 @@ class TestLunghezzaDeiTesti(unittest.TestCase):
         completo = self.contesto_ricco()
         testo_completo = " ".join(testi(completo, "oggetto") + testi(completo, "completo"))
         self.assertIn("MESH", testo_completo)
+
+
+class TestFormeENumeri(unittest.TestCase):
+    """Le novità del piano: forme aggiuntive, grandezza, numeri e maniglie."""
+
+    def test_le_forme_aggiuntive_compiono_nel_gruppo_costruisci(self):
+        contesto_ui = contesto()
+        comandi_visibili = identificatori(contesto_ui, "principale")
+        for chiave in comandi.ID_FORME:
+            with self.subTest(comando=chiave):
+                self.assertIn(chiave, comandi_visibili)
+        testo = testi(contesto_ui, "principale")
+        self.assertIn(TESTI["AZIONE_AGGIUNGI_CONO"], testo)
+        self.assertIn(TESTI["AZIONE_AGGIUNGI_TORO"], testo)
+        self.assertIn(TESTI["AZIONE_AGGIUNGI_TESTO"], testo)
+
+    def test_la_grandezza_delle_nuove_forme_si_puo_cambiare(self):
+        campi = [
+            campo
+            for campo in elementi(contesto(), "principale", Campo)
+            if campo.proprieta == configuration.CAMPO_GRANDEZZA_FORMA
+        ]
+        self.assertEqual(len(campi), 1)
+        self.assertEqual(campi[0].riferimento, configuration.RIFERIMENTO_SCENA)
+
+    def test_con_un_oggetto_scelto_compiono_i_campi_numerici(self):
+        contesto_ui = contesto(oggetto("Albero", scelto=True, attivo=True))
+        campi = [campo.proprieta for campo in elementi(contesto_ui, "oggetto", Campo)]
+        for previsto in ("location", "rotation_euler", "dimensions", configuration.CAMPO_PASSO):
+            with self.subTest(proprieta=previsto):
+                self.assertIn(previsto, campi)
+        # Ogni misura ha tre campi, uno per asse.
+        self.assertEqual(campi.count("location"), 3)
+        self.assertEqual(campi.count("dimensions"), 3)
+        # Le etichette portano l'unità della scena.
+        testo = " ".join(testi(contesto_ui, "oggetto"))
+        self.assertIn(f"{TESTI['ETICHETTA_POSIZIONE']} (m)", testo)
+        self.assertIn(f"{TESTI['ETICHETTA_ROTAZIONE']} (°)", testo)
+        self.assertIn(f"{TESTI['ETICHETTA_DIMENSIONE']} (m)", testo)
+
+    def test_la_rotazione_segue_il_modo_dell_oggetto(self):
+        """Un quaternione non ha tre angoli: il piano lo dice invece di mentire."""
+        per_quaternione = contesto(
+            oggetto("Albero", scelto=True, attivo=True, modo_rotazione="QUATERNION")
+        )
+        campi = [campo.proprieta for campo in elementi(per_quaternione, "oggetto", Campo)]
+        self.assertNotIn("rotation_euler", campi)
+        self.assertIn("rotation_quaternion", campi)
+        self.assertIn(TESTI["ETICHETTA_ROTAZIONE_QUATERNIONE"], testi(per_quaternione, "oggetto"))
+
+    def test_le_maniglie_del_mouse_compiono_sulla_scelta(self):
+        contesto_ui = contesto(oggetto("Albero", scelto=True, attivo=True))
+        comandi_oggetto = identificatori(contesto_ui, "oggetto")
+        for chiave in (
+            comandi.ID_STRUMENTO_SPOSTA,
+            comandi.ID_STRUMENTO_RUOTA,
+            comandi.ID_STRUMENTO_SCALA,
+        ):
+            with self.subTest(comando=chiave):
+                self.assertIn(chiave, comandi_oggetto)
+
+    def test_le_posizioni_precise_compiono_sulla_scelta(self):
+        contesto_ui = contesto(oggetto("Albero", scelto=True, attivo=True))
+        comandi_oggetto = identificatori(contesto_ui, "oggetto")
+        for chiave in (
+            comandi.ID_CENTRA,
+            comandi.ID_APPOGGIA_SUL_PIANO,
+            comandi.ID_COPIA,
+            comandi.ID_INCOLLA,
+            comandi.ID_BLOCCA_SCELTA,
+        ):
+            with self.subTest(comando=chiave):
+                self.assertIn(chiave, comandi_oggetto)
+
+    def test_con_più_oggetti_scelti_nessun_campo_numerico(self):
+        """Con più oggetti i numeri di uno solo sarebbero fuorvianti."""
+        contesto_ui = contesto(
+            oggetto("Cubo", scelto=True, attivo=True),
+            oggetto("Sfera", scelto=True),
+        )
+        campi = [campo.proprieta for campo in elementi(contesto_ui, "oggetto", Campo)]
+        self.assertNotIn("location", campi)
+        self.assertNotIn("dimensions", campi)
+        # I comandi che valgono per tutti restano.
+        comandi_oggetto = identificatori(contesto_ui, "oggetto")
+        for chiave in (comandi.ID_CENTRA, comandi.ID_APPOGGIA_SUL_PIANO, comandi.ID_COPIA):
+            with self.subTest(comando=chiave):
+                self.assertIn(chiave, comandi_oggetto)
+
+    def test_la_scritta_ha_i_suoi_campi(self):
+        contesto_ui = contesto(oggetto("Scritta", "FONT", scelto=True, attivo=True))
+        testo = testi(contesto_ui, "oggetto")
+        self.assertIn(TESTI["GRUPPO_TESTO"], testo)
+        campi = [campo.proprieta for campo in elementi(contesto_ui, "oggetto", Campo)]
+        self.assertIn("body", campi)
+        self.assertIn("size", campi)
+
+    def test_il_pulsante_di_blocco_dice_cosa_farà(self):
+        libero = contesto(oggetto("Albero", scelto=True, attivo=True))
+        self.assertIn(TESTI["AZIONE_BLOCCA_SCELTA"], testi(libero, "oggetto"))
+
+        bloccato = contesto(oggetto("Albero", scelto=True, attivo=True, bloccato=True))
+        self.assertIn(TESTI["AZIONE_SBLOCCA_SCELTA"], testi(bloccato, "oggetto"))
+        self.assertNotIn(TESTI["AZIONE_BLOCCA_SCELTA"], testi(bloccato, "oggetto"))
+
+    def test_le_unita_della_scena_compaiono_nelle_etichette(self):
+        """Con i centimetri l'etichetta lo dice: nessuna unità inventata."""
+        contesto_ui = contesto(
+            oggetto("Albero", scelto=True, attivo=True), unita_lunghezza="cm"
+        )
+        testo = " ".join(testi(contesto_ui, "oggetto"))
+        self.assertIn(f"{TESTI['ETICHETTA_POSIZIONE']} (cm)", testo)
+        self.assertNotIn("(m)", testo)
+
+    def test_con_radianti_cambia_anche_l_unita_degli_angoli(self):
+        contesto_ui = contesto(
+            oggetto("Albero", scelto=True, attivo=True), unita_angolo="rad"
+        )
+        testo = " ".join(testi(contesto_ui, "oggetto"))
+        self.assertIn(f"{TESTI['ETICHETTA_ROTAZIONE']} (rad)", testo)
 
 
 if __name__ == "__main__":

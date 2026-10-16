@@ -1,10 +1,16 @@
-"""Comandi di creazione: cubo, sfera, cilindro, piano e luce."""
+"""Comandi di creazione: cubo, sfera, cilindro, cono, piano, ciambella, testo e luce.
+
+Qui stanno anche i tre comandi che attivano gli strumenti di Blender con le
+maniglie (frecce, archi e cubetti): non cambiano i dati della scena, quindi
+non entrano nella storia di annullamento.
+"""
 
 from __future__ import annotations
 
 import bpy
 
 from .. import comandi
+from ..blender import vista as servizio_vista
 from ..localization import TESTI
 from ..scene import primitives
 from .base import OperatoreFormaFacile
@@ -82,6 +88,42 @@ class FORMAFACILE_OT_aggiungi_piano(_OperatoreCreazione):
         return primitives.crea_piano(context)
 
 
+class FORMAFACILE_OT_aggiungi_cono(_OperatoreCreazione):
+    """Aggiunge un cono alla scena."""
+
+    bl_idname = comandi.ID_AGGIUNGI_CONO
+    bl_label = TESTI["AZIONE_AGGIUNGI_CONO"]
+    bl_description = TESTI["AIUTO_AGGIUNGI_CONO"]
+    chiave_messaggio = "CONO_AGGIUNTO"
+
+    def creatore(self, context):
+        return primitives.crea_cono(context)
+
+
+class FORMAFACILE_OT_aggiungi_toro(_OperatoreCreazione):
+    """Aggiunge una ciambella alla scena."""
+
+    bl_idname = comandi.ID_AGGIUNGI_TORO
+    bl_label = TESTI["AZIONE_AGGIUNGI_TORO"]
+    bl_description = TESTI["AIUTO_AGGIUNGI_TORO"]
+    chiave_messaggio = "TORO_AGGIUNTO"
+
+    def creatore(self, context):
+        return primitives.crea_toro(context)
+
+
+class FORMAFACILE_OT_aggiungi_testo(_OperatoreCreazione):
+    """Aggiunge una scritta in piedi alla scena."""
+
+    bl_idname = comandi.ID_AGGIUNGI_TESTO
+    bl_label = TESTI["AZIONE_AGGIUNGI_TESTO"]
+    bl_description = TESTI["AIUTO_AGGIUNGI_TESTO"]
+    chiave_messaggio = "TESTO_AGGIUNTO"
+
+    def creatore(self, context):
+        return primitives.crea_testo(context)
+
+
 class FORMAFACILE_OT_aggiungi_luce(_OperatoreCreazione):
     """Aggiunge una luce alla scena."""
 
@@ -92,6 +134,63 @@ class FORMAFACILE_OT_aggiungi_luce(_OperatoreCreazione):
 
     def creatore(self, context):
         return primitives.crea_luce(context)
+
+
+class _OperatoreManiglie(OperatoreFormaFacile):
+    """Attiva uno strumento nativo di Blender, quello che mostra le maniglie.
+
+    Non cambia i dati della scena, quindi non finisce nella storia di Blender:
+    si limita a scegliere lo strumento con cui l'utente lavorerà.
+    """
+
+    bl_options = {"REGISTER"}
+    chiave_strumento = ""
+    chiave_messaggio = ""
+
+    @classmethod
+    def poll(cls, context):
+        return servizio_vista.aree_vista_disponibili(context)
+
+    def execute(self, context):
+        nome_strumento = comandi.STRUMENTI[self.chiave_strumento][0]
+        if not servizio_vista.attiva_strumento(context, nome_strumento):
+            self.report({"WARNING"}, TESTI["ERRORE_STRUMENTO"])
+            self.annuncia(context, TESTI["ERRORE_STRUMENTO"])
+            return {"CANCELLED"}
+        messaggio = TESTI[comandi.STRUMENTI[self.chiave_strumento][1]]
+        self.annuncia(context, messaggio)
+        self.report({"INFO"}, messaggio)
+        return {"FINISHED"}
+
+
+class FORMAFACILE_OT_strumento_sposta(_OperatoreManiglie):
+    """Mostra le frecce per spostare l'oggetto con il mouse."""
+
+    bl_idname = comandi.ID_STRUMENTO_SPOSTA
+    bl_label = TESTI["AZIONE_STRUMENTO_SPOSTA"]
+    bl_description = TESTI["AIUTO_STRUMENTO_SPOSTA"]
+    chiave_strumento = comandi.ID_STRUMENTO_SPOSTA
+    chiave_messaggio = "MESSAGGIO_STRUMENTO_SPOSTA"
+
+
+class FORMAFACILE_OT_strumento_ruota(_OperatoreManiglie):
+    """Mostra gli archi per ruotare l'oggetto con il mouse."""
+
+    bl_idname = comandi.ID_STRUMENTO_RUOTA
+    bl_label = TESTI["AZIONE_STRUMENTO_RUOTA"]
+    bl_description = TESTI["AIUTO_STRUMENTO_RUOTA"]
+    chiave_strumento = comandi.ID_STRUMENTO_RUOTA
+    chiave_messaggio = "MESSAGGIO_STRUMENTO_RUOTA"
+
+
+class FORMAFACILE_OT_strumento_scala(_OperatoreManiglie):
+    """Mostra i cubetti per cambiare la dimensione con il mouse."""
+
+    bl_idname = comandi.ID_STRUMENTO_SCALA
+    bl_label = TESTI["AZIONE_STRUMENTO_SCALA"]
+    bl_description = TESTI["AIUTO_STRUMENTO_SCALA"]
+    chiave_strumento = comandi.ID_STRUMENTO_SCALA
+    chiave_messaggio = "MESSAGGIO_STRUMENTO_SCALA"
 
 
 class FORMAFACILE_OT_apri_barra(bpy.types.Operator):
@@ -115,7 +214,13 @@ CLASSI = (
     FORMAFACILE_OT_aggiungi_cubo,
     FORMAFACILE_OT_aggiungi_sfera,
     FORMAFACILE_OT_aggiungi_cilindro,
+    FORMAFACILE_OT_aggiungi_cono,
     FORMAFACILE_OT_aggiungi_piano,
+    FORMAFACILE_OT_aggiungi_toro,
+    FORMAFACILE_OT_aggiungi_testo,
     FORMAFACILE_OT_aggiungi_luce,
+    FORMAFACILE_OT_strumento_sposta,
+    FORMAFACILE_OT_strumento_ruota,
+    FORMAFACILE_OT_strumento_scala,
     FORMAFACILE_OT_apri_barra,
 )

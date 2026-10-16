@@ -1,4 +1,4 @@
-"""Stato della scena usato dall'interfaccia: modalità, ricerca, passo, messaggio.
+"""Stato della scena usato dall'interfaccia: modalità, ricerca, passo, grandezza, messaggio.
 
 Lo stato vive nella scena (un gruppo di proprietà chiamato `formafacile`):
 funziona con qualsiasi modo di caricamento del componente aggiuntivo e viene
@@ -39,6 +39,15 @@ class FORMAFACILE_PG_stato(bpy.types.PropertyGroup):
         default=configuration.PASSO_PREDEFINITO,
         min=configuration.PASSO_MINIMO,
         max=configuration.PASSO_MASSIMO,
+        precision=2,
+        unit="LENGTH",
+    )
+    grandezza_forma: bpy.props.FloatProperty(
+        name=TESTI["ETICHETTA_GRANDEZZA"],
+        description=TESTI["AIUTO_GRANDEZZA"],
+        default=configuration.DIMENSIONE_FORMA_PREDEFINITA,
+        min=configuration.DIMENSIONE_FORMA_MINIMA,
+        max=configuration.DIMENSIONE_FORMA_MASSIMA,
         precision=2,
         unit="LENGTH",
     )
@@ -84,6 +93,20 @@ def passo_della_scena(scena) -> float:
     if passo <= 0.0:
         return configuration.PASSO_PREDEFINITO
     return passo
+
+
+def grandezza_della_scena(scena) -> float:
+    """Grandezza delle nuove forme, in metri e sempre dentro i limiti."""
+    stato = stato_della_scena(scena)
+    if stato is None:
+        return configuration.DIMENSIONE_FORMA_PREDEFINITA
+    grandezza = float(stato.grandezza_forma)
+    if grandezza <= 0.0:
+        return configuration.DIMENSIONE_FORMA_PREDEFINITA
+    return min(
+        max(grandezza, configuration.DIMENSIONE_FORMA_MINIMA),
+        configuration.DIMENSIONE_FORMA_MASSIMA,
+    )
 
 
 def messaggio_della_scena(scena, adesso: float | None = None) -> tuple[str, bool]:

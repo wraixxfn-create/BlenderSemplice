@@ -64,6 +64,9 @@ SENZA_UNDO = frozenset(
         comandi.ID_ANNULLA,
         comandi.ID_RIPETI,
         comandi.ID_PULISCI_FILTRO,
+        comandi.ID_STRUMENTO_SPOSTA,
+        comandi.ID_STRUMENTO_RUOTA,
+        comandi.ID_STRUMENTO_SCALA,
     }
 )
 
@@ -93,6 +96,22 @@ def verifica(condizione: object, descrizione: str) -> None:
 def azzera_scena() -> None:
     """Riparte da una scena vuota, come un principiante che apre Blender."""
     bpy.ops.wm.read_factory_settings(use_empty=True)
+
+
+def svuota_appunti() -> None:
+    """Toglie il file temporaneo degli appunti di Blender, se esiste.
+
+    Il copia e incolla della Vista 3D passa da un file `copybuffer.blend`
+    nella cartella temporanea, che sopravvive al processo: senza questo
+    passaggio la prova di "incolla senza aver copiato" dipenderebbe da quello
+    che era rimasto sul disco da un'esecuzione precedente.
+    """
+    import tempfile
+
+    try:
+        (Path(tempfile.gettempdir()) / "copybuffer.blend").unlink(missing_ok=True)
+    except OSError:
+        pass
 
 
 def comando(idname: str):
@@ -261,7 +280,10 @@ def prova_creazione() -> None:
         (comandi.ID_AGGIUNGI_CUBO, TESTI["NOME_CUBO"], TESTI["NOME_MESH_CUBO"]),
         (comandi.ID_AGGIUNGI_SFERA, TESTI["NOME_SFERA"], TESTI["NOME_MESH_SFERA"]),
         (comandi.ID_AGGIUNGI_CILINDRO, TESTI["NOME_CILINDRO"], TESTI["NOME_MESH_CILINDRO"]),
+        (comandi.ID_AGGIUNGI_CONO, TESTI["NOME_CONO"], TESTI["NOME_MESH_CONO"]),
         (comandi.ID_AGGIUNGI_PIANO, TESTI["NOME_PIANO"], TESTI["NOME_MESH_PIANO"]),
+        (comandi.ID_AGGIUNGI_TORO, TESTI["NOME_TORO"], TESTI["NOME_MESH_TORO"]),
+        (comandi.ID_AGGIUNGI_TESTO, TESTI["NOME_TESTO"], TESTI["NOME_DATI_TESTO"]),
     ]
     for idname, nome_atteso, nome_dati in attesi:
         esito = esegui(idname)
@@ -274,6 +296,48 @@ def prova_creazione() -> None:
             f"messaggio breve dopo la creazione: {messaggio()}",
         )
 
+    # Ogni forma promessa esiste davvero: l'elenco dei comandi è completo.
+    verifica(
+        tuple(idname for idname, _n, _d in attesi) == comandi.ID_FORME,
+        "l'elenco delle forme corrisponde alla tabella dei comandi",
+    )
+
+    # Il cono, la ciambella e la scritta sono forme vere, con geometria propria.
+    cono = bpy.data.objects[TESTI["NOME_CONO"]]
+    verifica(cono.type == "MESH" and len(cono.data.polygons) > 0, "il cono ha una geometria vera")
+    toro = bpy.data.objects[TESTI["NOME_TORO"]]
+    verifica(
+        toro.type == "MESH" and len(toro.data.polygons) > 0, "la ciambella ha una geometria vera"
+    )
+    verifica(
+        max(abs(v) for v in toro.dimensions) < 2.1,
+        f"la ciambella rispetta la grandezza scelta: {tuple(round(v, 2) for v in toro.dimensions)}",
+    )
+
+    testo = bpy.data.objects[TESTI["NOME_TESTO"]]
+    verifica(testo.type == "FONT", "la scritta è un oggetto Testo di Blender")
+    verifica(testo.data.body == TESTI["TESTO_INIZIALE"], "la scritta parte con un testo di esempio")
+    verifica(
+        abs(testo.data.size - configuration.DIMENSIONE_FORMA_PREDEFINITA / 2.0) < 1e-6,
+        f"l'altezza della scritta è mezza grandezza: {testo.data.size}",
+    )
+    verifica(
+        abs(testo.rotation_euler.x - math.pi / 2.0) < 1e-5,
+        "la scritta nasce in piedi, non distesa per terra",
+    )
+
+    # La grandezza delle nuove forme si cambia da un solo campo.
+    azzera_scena()
+    bpy.context.scene.formafacile.grandezza_forma = 4.0
+    esegui(comandi.ID_AGGIUNGI_CUBO)
+    cubo_grande = bpy.data.objects[TESTI["NOME_CUBO"]]
+    verifica(
+        max(abs(v) for v in cubo_grande.dimensions) > 3.9,
+        f"la grandezza scelta cambia davvero il cubo: {tuple(round(v, 2) for v in cubo_grande.dimensions)}",
+    )
+    bpy.context.scene.formafacile.grandezza_forma = configuration.DIMENSIONE_FORMA_PREDEFINITA
+
+    azzera_scena()
     esegui(comandi.ID_AGGIUNGI_LUCE)
     luce = bpy.data.objects.get(TESTI["NOME_LUCE"])
     verifica(luce is not None and luce.type == "LIGHT", "il comando Luce crea una luce")
@@ -668,6 +732,69 @@ def prova_trasformazioni() -> None:
         f"il messaggio spiega perché non si rimpicciolisce: {messaggio()}",
     )
 
+    # I blocchi di Blender vengono rispettati: un asse bloccato non si tocca.
+    azzera_scena()
+    esegui(comandi.ID_AGGIUNGI_CUBO)
+    bloccato_poco = bpy.data.objects[TESTI["NOME_CUBO"]]
+    bloccato_poco.lock_location = (True, False, False)
+    partenza = tuple(bloccato_poco.location)
+    esito = esegui(comandi.ID_SPOSTA_PASSO, direzione="destra")
+    verifica(esito is not None and "CANCELLED" in esito, "spostare un asse bloccato non fa nulla")
+    verifica(
+        tuple(bloccato_poco.location) == partenza,
+        "l'asse X bloccato resta fermo, e con lui tutto l'oggetto",
+    )
+    verifica(
+        messaggio() == TESTI["ERRORE_TRASFORMAZIONE_BLOCCATA"],
+        f"il messaggio spiega il blocco in italiano: {messaggio()}",
+    )
+
+    esito = esegui(comandi.ID_SPOSTA_PASSO, direzione="su")
+    verifica("FINISHED" in esito, "un asse libero si muove anche se un altro è bloccato")
+    verifica(
+        abs(bloccato_poco.location.z - partenza[2] - passo) < 1e-6
+        and abs(bloccato_poco.location.x - partenza[0]) < 1e-9,
+        "si muove solo l'asse libero (Z), l'asse bloccato (X) resta fermo",
+    )
+
+    bloccato_poco.lock_rotation = (False, False, True)
+    esito = esegui(comandi.ID_RUOTA_PASSO, verso="sinistra")
+    verifica("CANCELLED" in esito, "ruotare con l'asse Z bloccato non fa nulla")
+
+    bloccato_poco.lock_scale = (True, True, True)
+    esito = esegui(comandi.ID_SCALA_PASSO, verso="grande")
+    verifica("CANCELLED" in esito, "ingrandire con la dimensione bloccata non fa nulla")
+    verifica(
+        tuple(bloccato_poco.scale) == (1.0, 1.0, 1.0),
+        "la dimensione bloccata non cambia",
+    )
+
+    # Un oggetto non scelto non viene mai toccato.
+    azzera_scena()
+    esegui(comandi.ID_AGGIUNGI_CUBO)
+    esegui(comandi.ID_AGGIUNGI_SFERA)
+    cubo = bpy.data.objects[TESTI["NOME_CUBO"]]
+    sfera = bpy.data.objects[TESTI["NOME_SFERA"]]
+    esegui(comandi.ID_SCEGLI_OGGETTO, oggetto=cubo.name, modo="sostituisci")
+    prima_sfera = tuple(sfera.location)
+    prima_cubo = tuple(cubo.location)
+    esegui(comandi.ID_SPOSTA_PASSO, direzione="destra")
+    esegui(comandi.ID_RUOTA_PASSO, verso="destra")
+    esegui(comandi.ID_SCALA_PASSO, verso="grande")
+    verifica(
+        tuple(sfera.location) == prima_sfera and tuple(sfera.scale) == (1.0, 1.0, 1.0),
+        "l'oggetto non scelto non si muove e non cambia dimensione",
+    )
+    verifica(
+        cubo.location.x > prima_cubo[0],
+        "l'oggetto scelto si è mosso: la scelta comanda",
+    )
+    verifica(
+        bpy.context.view_layer.objects.active is not None
+        and bpy.context.view_layer.objects.active.name == cubo.name,
+        "dopo i passi l'oggetto attivo è lo stesso di prima",
+    )
+
     # Luci.
     azzera_scena()
     esegui(comandi.ID_AGGIUNGI_LUCE)
@@ -741,6 +868,306 @@ def prova_duplica_elimina() -> None:
     verifica(
         TESTI["ETICHETTA_NESSUN_OGGETTO"] in testi_pannello,
         "la scena vuota mostra un invito chiaro",
+    )
+
+
+# ---------------------------------------------------------- posizioni precise
+
+
+def prova_posizioni() -> None:
+    """Porta al centro e appoggia sul piano: niente sorprese."""
+    azzera_scena()
+    esegui(comandi.ID_AGGIUNGI_CUBO)
+    esegui(comandi.ID_AGGIUNGI_SFERA)
+    cubo = bpy.data.objects[TESTI["NOME_CUBO"]]
+    sfera = bpy.data.objects[TESTI["NOME_SFERA"]]
+    cubo.location = (3.0, -2.0, 5.0)
+    sfera.location = (-1.5, 4.0, 2.0)
+    bpy.context.view_layer.update()
+
+    esegui(comandi.ID_SCEGLI_OGGETTO, oggetto=cubo.name, modo="sostituisci")
+    esito = esegui(comandi.ID_CENTRA)
+    verifica("FINISHED" in esito, "Porta al centro viene eseguito")
+    verifica(
+        tuple(round(v, 6) for v in cubo.location) == (0.0, 0.0, 0.0),
+        f"il cubo è al centro: {tuple(round(v, 3) for v in cubo.location)}",
+    )
+    verifica(
+        tuple(sfera.location) == (-1.5, 4.0, 2.0),
+        "Porta al centro non tocca gli oggetti non scelti",
+    )
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_CENTRATO"].format(nome=cubo.name),
+        f"messaggio di centramento: {messaggio()}",
+    )
+
+    # Il blocco della posizione viene rispettato anche qui.
+    sfera.lock_location = (False, True, True)
+    esegui(comandi.ID_SCEGLI_OGGETTO, oggetto=sfera.name, modo="sostituisci")
+    esito = esegui(comandi.ID_CENTRA)
+    verifica("FINISHED" in esito, "il centramento con un asse bloccato riesce in parte")
+    verifica(
+        abs(sfera.location.x) < 1e-6 and sfera.location.y == 4.0,
+        f"si centra solo l'asse libero: {tuple(round(v, 3) for v in sfera.location)}",
+    )
+    verifica(
+        TESTI["AVVISO_TRASFORMAZIONE_PARZIALE"].format(numero=1) in messaggio()
+        or TESTI["MESSAGGIO_CENTRATO"].format(nome=sfera.name) in messaggio(),
+        f"il messaggio parla del risultato: {messaggio()}",
+    )
+    sfera.lock_location = (False, False, False)
+
+    # Appoggia sul piano: la parte più bassa tocca lo zero.
+    azzera_scena()
+    esegui(comandi.ID_AGGIUNGI_SFERA)
+    esegui(comandi.ID_AGGIUNGI_CONO)
+    sfera2 = bpy.data.objects[TESTI["NOME_SFERA"]]
+    cono = bpy.data.objects[TESTI["NOME_CONO"]]
+    sfera2.location = (0.0, 0.0, 7.0)
+    cono.location = (2.0, 0.0, -3.0)
+    bpy.context.view_layer.update()
+    esegui(comandi.ID_SCEGLI_TUTTO)
+    esito = esegui(comandi.ID_APPOGGIA_SUL_PIANO)
+    verifica("FINISHED" in esito, "Appoggia sul piano viene eseguito")
+    bpy.context.view_layer.update()
+    for oggetto in (sfera2, cono):
+        angoli = [oggetto.matrix_world @ mathutils.Vector(a) for a in oggetto.bound_box]
+        minimo = min(a.z for a in angoli)
+        verifica(
+            abs(minimo) < 1e-5,
+            f"{oggetto.name} appoggia sul piano (quota più bassa {minimo:.6f})",
+        )
+        verifica(
+            abs(oggetto.location.x - round(oggetto.location.x, 6)) < 1e-5,
+            "appoggiare non sposta l'oggetto in orizzontale",
+        )
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_APPOGGIATI"].format(numero=2),
+        f"messaggio di appoggio al plurale: {messaggio()}",
+    )
+
+    # Un oggetto senza forma propria si appoggia per il suo punto.
+    esegui(comandi.ID_AGGIUNGI_LUCE)
+    luce = bpy.data.objects[TESTI["NOME_LUCE"]]
+    esegui(comandi.ID_SCEGLI_OGGETTO, oggetto=luce.name, modo="sostituisci")
+    esito = esegui(comandi.ID_APPOGGIA_SUL_PIANO)
+    verifica("FINISHED" in esito, "la luce si appoggia per il suo punto di riferimento")
+    verifica(abs(luce.location.z) < 1e-6, "la luce finisce con il punto sul piano")
+    verifica(
+        TESTI["AVVISO_APPOGGIO_SENZA_FORMA"] in messaggio(),
+        f"il messaggio spiega il caso senza forma: {messaggio()}",
+    )
+
+
+# --------------------------------------------- blocco della scelta, copia, incolla
+
+
+def prova_blocco_copia() -> None:
+    azzera_scena()
+    esegui(comandi.ID_AGGIUNGI_CUBO)
+    esegui(comandi.ID_AGGIUNGI_SFERA)
+    cubo = bpy.data.objects[TESTI["NOME_CUBO"]]
+    sfera = bpy.data.objects[TESTI["NOME_SFERA"]]
+
+    esegui(comandi.ID_SCEGLI_OGGETTO, oggetto=cubo.name, modo="sostituisci")
+    esito = esegui(comandi.ID_BLOCCA_SCELTA, oggetto=cubo.name, blocca=True)
+    verifica("FINISHED" in esito, "Blocca la scelta viene eseguito")
+    verifica(bool(cubo.hide_select), "l'oggetto è protetto dalla scelta")
+    verifica(cubo.name not in scelti(), "un oggetto bloccato esce dalla scelta")
+    verifica(
+        bpy.context.view_layer.objects.active is None
+        or bpy.context.view_layer.objects.active.name != cubo.name,
+        "l'oggetto attivo non resta un oggetto bloccato",
+    )
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_SCELTA_BLOCCATA"].format(nome=cubo.name),
+        f"messaggio di blocco: {messaggio()}",
+    )
+
+    esito = esegui(comandi.ID_SCEGLI_OGGETTO, oggetto=cubo.name, modo="sostituisci")
+    verifica("CANCELLED" in esito, "un oggetto bloccato non si sceglie")
+
+    esito = esegui(comandi.ID_BLOCCA_SCELTA, oggetto=cubo.name, blocca=False)
+    verifica("FINISHED" in esito, "Sblocca la scelta viene eseguito")
+    verifica(not bool(cubo.hide_select), "l'oggetto è di nuovo scegliibile")
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_SCELTA_SBLOCCATA"].format(nome=cubo.name),
+        f"messaggio di sblocco: {messaggio()}",
+    )
+    esegui(comandi.ID_SCEGLI_OGGETTO, oggetto=cubo.name, modo="sostituisci")
+    verifica(cubo.name in scelti(), "dopo lo sblocco l'oggetto si sceglie di nuovo")
+
+    # Copia e incolla usano gli appunti di Blender.
+    svuota_appunti()
+    esegui(comandi.ID_SCEGLI_OGGETTO, oggetto=sfera.name, modo="sostituisci")
+    esito = esegui(comandi.ID_INCOLLA)
+    verifica(
+        esito is not None and "CANCELLED" in esito,
+        "incollare senza aver copiato avvisa, in italiano",
+    )
+    verifica(
+        messaggio() == TESTI["ERRORE_NIENTE_DA_INCOLLARE"],
+        f"messaggio di appunti vuoti: {messaggio()}",
+    )
+
+    esito = esegui(comandi.ID_COPIA)
+    verifica("FINISHED" in esito, "Copia viene eseguito con una Vista 3D")
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_COPIATI"].format(numero=1),
+        f"messaggio di copia: {messaggio()}",
+    )
+
+    quanti = len(bpy.context.scene.objects)
+    esito = esegui(comandi.ID_INCOLLA)
+    verifica("FINISHED" in esito, "Incolla viene eseguito")
+    verifica(
+        len(bpy.context.scene.objects) == quanti + 1,
+        "l'incollato aggiunge un oggetto alla scena",
+    )
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_INCOLLATI"].format(numero=1),
+        f"messaggio di incollato: {messaggio()}",
+    )
+
+
+# -------------------------------------------------------------------- maniglie
+
+
+def prova_maniglie() -> None:
+    """I pulsanti attivano gli strumenti nativi con le frecce della Vista 3D."""
+    azzera_scena()
+    esegui(comandi.ID_AGGIUNGI_CUBO)
+    area = area_vista()
+    verifica(area is not None, "il test ha una Vista 3D")
+
+    attesi = (
+        (comandi.ID_STRUMENTO_SPOSTA, configuration.STRUMENTO_SPOSTA),
+        (comandi.ID_STRUMENTO_RUOTA, configuration.STRUMENTO_RUOTA),
+        (comandi.ID_STRUMENTO_SCALA, configuration.STRUMENTO_SCALA),
+    )
+    spazio = area.spaces.active
+    # Come farebbe chi aveva spento le maniglie: il comando deve riaccenderle.
+    for nome in configuration.MOSTRA_MANIGLIE:
+        if hasattr(spazio, nome):
+            setattr(spazio, nome, False)
+
+    for idname, strumento in attesi:
+        esito = esegui(idname)
+        verifica(esito is not None and "FINISHED" in esito, f"comando eseguito: {idname}")
+        with contesto_area(area):
+            verifica(
+                bpy.context.workspace.tools.from_space_view3d_mode("OBJECT", create=False).idname
+                == strumento,
+                f"lo strumento attivo è {strumento}",
+            )
+        verifica(
+            all(getattr(spazio, nome, True) for nome in configuration.MOSTRA_MANIGLIE),
+            f"{idname} riaccende gli interruttori delle maniglie",
+        )
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_STRUMENTO_SCALA"],
+        f"messaggio dello strumento: {messaggio()}",
+    )
+
+    # Senza una Vista 3D il comando avvisa e non fallisce.
+    finto = type("ContestoFinto", (), {"window_manager": None, "window": None})()
+    verifica(
+        not servizio_vista.aree_vista_disponibili(finto),
+        "senza finestre non ci sono viste 3D disponibili",
+    )
+    verifica(
+        not servizio_vista.attiva_strumento(finto, configuration.STRUMENTO_SPOSTA),
+        "senza Vista 3D lo strumento non si attiva, ma non cade",
+    )
+
+
+# --------------------------------------------------------------- campi numerici
+
+
+def prova_campi_numerici() -> None:
+    """I campi di posizione, rotazione e dimensione sono legati ai dati veri."""
+    azzera_scena()
+    esegui(comandi.ID_AGGIUNGI_CUBO)
+    cubo = bpy.data.objects[TESTI["NOME_CUBO"]]
+
+    registro = disegna_pannello(panel.FORMAFACILE_PT_oggetto)
+    controlla_registro(registro, "oggetto (campi numerici)")
+    campi = [prop for _tipo, prop in supporto_finto.campi(registro)]
+    for previsto in ("location", "rotation_euler", "dimensions", configuration.CAMPO_PASSO):
+        verifica(previsto in campi, f"il pannello mostra il campo {previsto}")
+    verifica(
+        supporto_finto.campi(registro).count(("Object", "location")) == 3,
+        "la posizione ha tre campi, uno per asse",
+    )
+
+    # I campi sono davvero collegati: un valore scritto arriva all'oggetto.
+    voci = [voce for voce in registro if voce["tipo"] == "campo" and voce["proprieta"] == "location"]
+    verifica(len(voci) == 3, "tre campi posizione trovati nel disegno")
+    verifica(
+        all(voce["parametri"].get("index") == indice for indice, voce in enumerate(voci)),
+        "ogni campo posizione porta l'indice del suo asse",
+    )
+
+    # Le etichette scrivono l'unità della scena, non una scelta fissa.
+    etichette = supporto_finto.etichette(registro)
+    verifica(
+        TESTI["ETICHETTA_POSIZIONE"] + " (m)" in etichette,
+        f"l'etichetta posizione porta i metri: {[e for e in etichette if 'Posizione' in e]}",
+    )
+    verifica(
+        TESTI["ETICHETTA_ROTAZIONE"] + " (°)" in etichette,
+        "l'etichetta rotazione porta i gradi",
+    )
+
+    bpy.context.scene.unit_settings.length_unit = "CENTIMETERS"
+    registro = disegna_pannello(panel.FORMAFACILE_PT_oggetto)
+    verifica(
+        TESTI["ETICHETTA_POSIZIONE"] + " (cm)" in supporto_finto.etichette(registro),
+        "cambiando l'unità della scena cambia l'etichetta",
+    )
+    bpy.context.scene.unit_settings.length_unit = "METERS"
+
+    bpy.context.scene.unit_settings.system_rotation = "RADIANS"
+    registro = disegna_pannello(panel.FORMAFACILE_PT_oggetto)
+    verifica(
+        TESTI["ETICHETTA_ROTAZIONE"] + " (rad)" in supporto_finto.etichette(registro),
+        "con i radianti l'etichetta degli angoli cambia",
+    )
+    bpy.context.scene.unit_settings.system_rotation = "DEGREES"
+
+    # La rotazione segue il modo dell'oggetto: un quaternione non ha tre angoli.
+    cubo.rotation_mode = "QUATERNION"
+    registro = disegna_pannello(panel.FORMAFACILE_PT_oggetto)
+    proprieta = [prop for _tipo, prop in supporto_finto.campi(registro)]
+    verifica(
+        "rotation_quaternion" in proprieta and "rotation_euler" not in proprieta,
+        "con un quaternione il campo è quello giusto",
+    )
+    cubo.rotation_mode = "XYZ"
+
+    # La scritta ha i suoi campi, collegati ai dati del testo.
+    azzera_scena()
+    esegui(comandi.ID_AGGIUNGI_TESTO)
+    testo = bpy.data.objects[TESTI["NOME_TESTO"]]
+    registro = disegna_pannello(panel.FORMAFACILE_PT_oggetto)
+    controlla_registro(registro, "oggetto (scritta)")
+    proprieta = [prop for _tipo, prop in supporto_finto.campi(registro)]
+    verifica("body" in proprieta, "il pannello mostra il campo della scritta")
+    verifica("size" in proprieta, "il pannello mostra l'altezza della scritta")
+    testo.data.body = "Ciao"
+    bpy.context.view_layer.update()
+    verifica(testo.data.body == "Ciao", "il campo della scritta è quello vero")
+
+    # Con più oggetti scelti i numeri non compaiono: valgono per uno solo.
+    azzera_scena()
+    esegui(comandi.ID_AGGIUNGI_CUBO)
+    esegui(comandi.ID_AGGIUNGI_SFERA)
+    esegui(comandi.ID_SCEGLI_TUTTO)
+    registro = disegna_pannello(panel.FORMAFACILE_PT_oggetto)
+    proprieta = [prop for _tipo, prop in supporto_finto.campi(registro)]
+    verifica(
+        "location" not in proprieta and "dimensions" not in proprieta,
+        "con più oggetti scelti i campi numerici non compaiono",
     )
 
 
@@ -1057,7 +1484,7 @@ def prova_pannelli() -> None:
         "la testata aggiunge solo il pulsante FormaFacile",
     )
 
-    # Modalità Semplice: niente campi tecnici sull'oggetto.
+    # Modalità Semplice: i numeri sì, i campi tecnici no.
     bpy.context.scene.formafacile.modalita = configuration.MODALITA_SEMPLICE
     verifica(
         panel.FORMAFACILE_PT_completo.poll(bpy.context) is False,
@@ -1067,9 +1494,17 @@ def prova_pannelli() -> None:
     controlla_registro(registro, "oggetto (semplice)")
     campi = [proprieta for _tipo, proprieta in supporto_finto.campi(registro)]
     verifica(
-        all(nome not in campi for nome in ("location", "scale", "display_type", "hide_render")),
+        all(
+            nome not in campi
+            for nome in ("name", "scale", "display_type", "hide_render", "hide_select")
+        ),
         f"in modalità Semplice non compaiono campi tecnici: {campi}",
     )
+    for previsto in ("location", "rotation_euler", "dimensions"):
+        verifica(
+            previsto in campi,
+            f"in modalità Semplice il campo numerico {previsto} resta a disposizione",
+        )
     verifica(
         TESTI["GRUPPO_SPOSTA"] in supporto_finto.etichette(registro),
         "in modalità Semplice ci sono comunque i comandi di spostamento",
@@ -1418,6 +1853,40 @@ def prova_tabelle() -> None:
         set(comandi.MODI_SCELTA) == {"sostituisci", "aggiungi", "rimuovi"},
         "i modi di scelta sono quelli usati dagli operatori",
     )
+    verifica(
+        set(comandi.ID_FORME) == {
+            comandi.ID_AGGIUNGI_CUBO,
+            comandi.ID_AGGIUNGI_SFERA,
+            comandi.ID_AGGIUNGI_CILINDRO,
+            comandi.ID_AGGIUNGI_CONO,
+            comandi.ID_AGGIUNGI_PIANO,
+            comandi.ID_AGGIUNGI_TORO,
+            comandi.ID_AGGIUNGI_TESTO,
+        },
+        "l'elenco delle forme coincide con i comandi di creazione",
+    )
+    verifica(
+        set(comandi.STRUMENTI)
+        == {
+            comandi.ID_STRUMENTO_SPOSTA,
+            comandi.ID_STRUMENTO_RUOTA,
+            comandi.ID_STRUMENTO_SCALA,
+        },
+        "la tabella degli strumenti ha i tre comandi con le maniglie",
+    )
+    for idname, (strumento, chiave_messaggio) in comandi.STRUMENTI.items():
+        verifica(
+            chiave_messaggio in TESTI and strumento.startswith("builtin."),
+            f"lo strumento {idname} ha nome e messaggio validi",
+        )
+    # Gli interruttori delle maniglie vivono nelle proprietà RNA dello spazio
+    # Vista 3D: sulla classe Python non compaiono con hasattr.
+    proprieta_vista = {p.identifier for p in bpy.types.SpaceView3D.bl_rna.properties}
+    for nome in configuration.MOSTRA_MANIGLIE:
+        verifica(
+            nome in proprieta_vista,
+            f"l'interruttore delle maniglie esiste: {nome}",
+        )
 
     verifica(nomi.pulisci_nome("  Doppio   spazio  ") == "Doppio spazio", "gli spazi doppi si stringono")
     verifica(nomi.pulisci_nome("\n\t") == "", "i soli ritorni a capo non fanno un nome")
@@ -1445,6 +1914,10 @@ def main() -> int:
         prova_visibilita()
         prova_trasformazioni()
         prova_duplica_elimina()
+        prova_posizioni()
+        prova_blocco_copia()
+        prova_maniglie()
+        prova_campi_numerici()
         prova_vista()
         prova_disposizioni()
         prova_pannelli()

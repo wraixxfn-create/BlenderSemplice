@@ -26,7 +26,12 @@ class Azione:
 
 @dataclass(frozen=True)
 class Campo:
-    """Campo collegato a un dato reale della scena."""
+    """Campo collegato a un dato reale della scena.
+
+    Con `indice` si disegna un solo asse di una proprietà a tre valori (per
+    esempio la sola X della posizione): è così che i campi numerici restano
+    brevi e leggibili nella barra laterale.
+    """
 
     riferimento: str
     chiave: str
@@ -36,6 +41,7 @@ class Campo:
     solo_icona: bool = False
     espanso: bool = False
     interruttore: bool = False
+    indice: int | None = None
 
 
 @dataclass(frozen=True)
@@ -117,6 +123,16 @@ class Contesto:
     soglia_filtro: int = 8
     gradi_rotazione: float = 15.0
     percentuale_scala: int = 10
+    # Unità lette dalla scena: l'interfaccia le scrive accanto ai numeri, così
+    # "2" diventa "2 m" e "15" diventa "15°" senza inventare nulla.
+    unita_lunghezza: str = "m"
+    unita_angolo: str = "°"
+    grandezza_forma: float = 2.0
+
+    @property
+    def unita_lunghezza_o_predefinita(self) -> str:
+        """Unità di lunghezza, con ripiego sui metri quando la scena non ne usa."""
+        return self.unita_lunghezza or "m"
 
     # Campi derivati, calcolati una volta sola.
     elenco: tuple[Oggetto, ...] = field(default=(), repr=False)
@@ -161,4 +177,7 @@ def crea_contesto(**valori: object) -> Contesto:
         "percentuale_scala",
         int(round((configuration.FATTORE_SCALA_PREDEFINITO - 1.0) * 100)),
     )
+    valori.setdefault("unita_lunghezza", "m")
+    valori.setdefault("unita_angolo", "°")
+    valori.setdefault("grandezza_forma", configuration.DIMENSIONE_FORMA_PREDEFINITA)
     return Contesto(**valori)  # type: ignore[arg-type]

@@ -10,6 +10,7 @@ from __future__ import annotations
 
 from .. import comandi, configuration
 from ..localization import TESTI
+from ..scene import misure
 from . import icone
 from .modello import Azione, Campo, Contesto, Etichetta, Gruppo, Oggetto, Pannello, Riga
 
@@ -77,9 +78,28 @@ def _pannello_principale(contesto: Contesto) -> tuple[Gruppo, ...]:
         ),
         _riga(
             _azione(comandi.ID_AGGIUNGI_CILINDRO, TESTI["AZIONE_AGGIUNGI_CILINDRO"], "MESH_CYLINDER"),
-            _azione(comandi.ID_AGGIUNGI_PIANO, TESTI["AZIONE_AGGIUNGI_PIANO"], "MESH_PLANE"),
+            _azione(comandi.ID_AGGIUNGI_CONO, TESTI["AZIONE_AGGIUNGI_CONO"], "MESH_CONE"),
         ),
-        _riga(_azione(comandi.ID_AGGIUNGI_LUCE, TESTI["AZIONE_AGGIUNGI_LUCE"], "LIGHT")),
+        _riga(
+            _azione(comandi.ID_AGGIUNGI_PIANO, TESTI["AZIONE_AGGIUNGI_PIANO"], "MESH_PLANE"),
+            _azione(comandi.ID_AGGIUNGI_TORO, TESTI["AZIONE_AGGIUNGI_TORO"], "MESH_TORUS"),
+        ),
+        _riga(
+            _azione(comandi.ID_AGGIUNGI_TESTO, TESTI["AZIONE_AGGIUNGI_TESTO"], "FONT_DATA"),
+            _azione(comandi.ID_AGGIUNGI_LUCE, TESTI["AZIONE_AGGIUNGI_LUCE"], "LIGHT"),
+        ),
+        _riga(
+            Etichetta(
+                misure.etichetta_con_unita(
+                    TESTI["ETICHETTA_GRANDEZZA"], contesto.unita_lunghezza
+                )
+            ),
+            Campo(
+                riferimento=configuration.RIFERIMENTO_SCENA,
+                chiave=configuration.CHIAVE_SCENA,
+                proprieta=configuration.CAMPO_GRANDEZZA_FORMA,
+            ),
+        ),
     )
     gruppi.append(
         _gruppo(
@@ -263,6 +283,16 @@ def _riga_oggetto(oggetto: Oggetto) -> Riga:
             solo_icona=True,
             parametri=(("oggetto", oggetto.chiave),),
         ),
+        _azione(
+            comandi.ID_BLOCCA_SCELTA,
+            TESTI["AZIONE_BLOCCA_SCELTA"] if not oggetto.bloccato else TESTI["AZIONE_SBLOCCA_SCELTA"],
+            "LOCKED" if oggetto.bloccato else "UNLOCKED",
+            solo_icona=True,
+            parametri=(
+                ("oggetto", oggetto.chiave),
+                ("blocca", not oggetto.bloccato),
+            ),
+        ),
     ]
     if oggetto.attivo:
         elementi.append(
@@ -347,7 +377,7 @@ def _gruppi_oggetto_singolo(contesto: Contesto, oggetto: Oggetto) -> tuple[Grupp
     if oggetto.nascosto:
         gruppi.append(_gruppo_nascosto(oggetto))
 
-    gruppi.extend(_gruppi_trasformazioni(contesto))
+    gruppi.extend(_gruppi_trasformazioni(contesto, oggetto))
     gruppi.append(_gruppo_altre_azioni(contesto, oggetto))
     gruppi.extend(_gruppi_per_tipo(contesto, oggetto, completo=completa))
     return tuple(gruppi)
@@ -410,6 +440,18 @@ def _gruppi_oggetti_scelti(contesto: Contesto, scelti: tuple[Oggetto, ...]) -> t
                 "HIDE_OFF",
             ),
         ),
+        _riga(
+            _azione(comandi.ID_CENTRA, TESTI["AZIONE_CENTRA"], "PIVOT_BOUNDBOX"),
+            _azione(
+                comandi.ID_APPOGGIA_SUL_PIANO,
+                TESTI["AZIONE_APPOGGIA_SUL_PIANO"],
+                "SNAP_FACE",
+            ),
+        ),
+        _riga(
+            _azione(comandi.ID_COPIA, TESTI["AZIONE_COPIA"], "COPYDOWN"),
+            _azione(comandi.ID_BLOCCA_SCELTA, TESTI["AZIONE_BLOCCA_SCELTA"], "LOCKED"),
+        ),
         _riga(_azione(comandi.ID_DUPLICA, TESTI["AZIONE_DUPLICA_SCELTI"], "DUPLICATE")),
         _riga(
             _azione(
@@ -424,12 +466,75 @@ def _gruppi_oggetti_scelti(contesto: Contesto, scelti: tuple[Oggetto, ...]) -> t
     return tuple(gruppi)
 
 
-def _gruppi_trasformazioni(contesto: Contesto) -> list[Gruppo]:
+def _unita(contesto: Contesto, base: str, unita: str) -> str:
+    """Etichetta di un gruppo di numeri, con l'unità fra parentesi se c'è."""
+    return misure.etichetta_con_unita(base, unita)
+
+
+def _riga_misure(oggetto: Oggetto, proprieta: str) -> Riga:
+    """Una riga con i tre assi di una misura, collegati ai dati veri."""
+    return _riga(
+        *(
+            Campo(
+                riferimento=configuration.RIFERIMENTO_OGGETTO,
+                chiave=oggetto.chiave,
+                proprieta=proprieta,
+                testo=TESTI[f"ASSE_{asse.upper()}"],
+                indice=indice,
+            )
+            for indice, asse in enumerate(misure.ASSI)
+        )
+    )
+
+
+def _righe_rotazione(contesto: Contesto, oggetto: Oggetto) -> tuple[Riga, ...]:
+    """Campi della rotazione, nella forma che l'oggetto usa davvero."""
+    modo = oggetto.modo_rotazione
+    if modo == "QUATERNION":
+        return (
+            _riga(Etichetta(TESTI["ETICHETTA_ROTAZIONE_QUATERNIONE"])),
+            _riga(
+                Campo(
+                    riferimento=configuration.RIFERIMENTO_OGGETTO,
+                    chiave=oggetto.chiave,
+                    proprieta="rotation_quaternion",
+                    testo=TESTI["ETICHETTA_ROTAZIONE"],
+                )
+            ),
+        )
+    if modo == "AXIS_ANGLE":
+        return (
+            _riga(Etichetta(TESTI["ETICHETTA_ROTAZIONE_ASSE_ANGOLO"])),
+            _riga(
+                Campo(
+                    riferimento=configuration.RIFERIMENTO_OGGETTO,
+                    chiave=oggetto.chiave,
+                    proprieta="rotation_axis_angle",
+                    testo=TESTI["ETICHETTA_ROTAZIONE"],
+                )
+            ),
+        )
+    return (
+        _riga(
+            Etichetta(
+                _unita(contesto, TESTI["ETICHETTA_ROTAZIONE"], contesto.unita_angolo)
+            )
+        ),
+        _riga_misure(oggetto, "rotation_euler"),
+    )
+
+
+def _gruppi_trasformazioni(contesto: Contesto, oggetto: Oggetto | None = None) -> list[Gruppo]:
+    """Spostamento, rotazione e dimensione: passi, numeri e maniglie.
+
+    I campi numerici compaiono solo con un oggetto scelto: con più oggetti
+    scelti i numeri di uno solo sarebbero fuorvianti, mentre i passi valgono
+    per tutti e restano disponibili.
+    """
     gradi = _numero_breve(contesto.gradi_rotazione)
     percentuale = contesto.percentuale_scala
 
-    sposta = _gruppo(
-        TESTI["GRUPPO_SPOSTA"],
+    righe_sposta: list[Riga] = [
         _riga(
             Etichetta(TESTI["ETICHETTA_PASSO"]),
             Campo(
@@ -437,34 +542,75 @@ def _gruppi_trasformazioni(contesto: Contesto) -> list[Gruppo]:
                 chiave=configuration.CHIAVE_SCENA,
                 proprieta=configuration.CAMPO_PASSO,
             ),
-        ),
-        _riga(
-            _azione(comandi.ID_SPOSTA_PASSO, TESTI["AZIONE_VERSO_SINISTRA"], parametri=(("direzione", "sinistra"),)),
-            _azione(comandi.ID_SPOSTA_PASSO, TESTI["AZIONE_VERSO_DESTRA"], parametri=(("direzione", "destra"),)),
-            _azione(comandi.ID_SPOSTA_PASSO, TESTI["AZIONE_VERSO_SU"], parametri=(("direzione", "su"),)),
-        ),
-        _riga(
-            _azione(comandi.ID_SPOSTA_PASSO, TESTI["AZIONE_VERSO_GIU"], parametri=(("direzione", "giu"),)),
-            _azione(comandi.ID_SPOSTA_PASSO, TESTI["AZIONE_VERSO_AVANTI"], parametri=(("direzione", "avanti"),)),
-            _azione(comandi.ID_SPOSTA_PASSO, TESTI["AZIONE_VERSO_INDIETRO"], parametri=(("direzione", "indietro"),)),
-        ),
+        )
+    ]
+    if oggetto is not None:
+        righe_sposta.append(
+            _riga(
+                Etichetta(
+                    _unita(
+                        contesto, TESTI["ETICHETTA_POSIZIONE"], contesto.unita_lunghezza
+                    )
+                )
+            )
+        )
+        righe_sposta.append(_riga_misure(oggetto, "location"))
+    righe_sposta.extend(
+        (
+            _riga(
+                _azione(comandi.ID_SPOSTA_PASSO, TESTI["AZIONE_VERSO_SINISTRA"], parametri=(("direzione", "sinistra"),)),
+                _azione(comandi.ID_SPOSTA_PASSO, TESTI["AZIONE_VERSO_DESTRA"], parametri=(("direzione", "destra"),)),
+                _azione(comandi.ID_SPOSTA_PASSO, TESTI["AZIONE_VERSO_SU"], parametri=(("direzione", "su"),)),
+            ),
+            _riga(
+                _azione(comandi.ID_SPOSTA_PASSO, TESTI["AZIONE_VERSO_GIU"], parametri=(("direzione", "giu"),)),
+                _azione(comandi.ID_SPOSTA_PASSO, TESTI["AZIONE_VERSO_AVANTI"], parametri=(("direzione", "avanti"),)),
+                _azione(comandi.ID_SPOSTA_PASSO, TESTI["AZIONE_VERSO_INDIETRO"], parametri=(("direzione", "indietro"),)),
+            ),
+            _riga(_azione(comandi.ID_STRUMENTO_SPOSTA, TESTI["AZIONE_STRUMENTO_SPOSTA"], "OBJECT_ORIGIN")),
+        )
     )
-    ruota = _gruppo(
-        TESTI["GRUPPO_RUOTA"],
-        _riga(
-            _azione(comandi.ID_RUOTA_PASSO, TESTI["AZIONE_RUOTA_SINISTRA"], "BACK", parametri=(("verso", "sinistra"),)),
-            _azione(comandi.ID_RUOTA_PASSO, TESTI["AZIONE_RUOTA_DESTRA"], "FORWARD", parametri=(("verso", "destra"),)),
-        ),
-        _riga(Etichetta(TESTI["ETICHETTA_GRADI_ROTAZIONE"].format(gradi=gradi))),
+    sposta = _gruppo(TESTI["GRUPPO_SPOSTA"], *righe_sposta)
+
+    righe_ruota: list[Riga] = []
+    if oggetto is not None:
+        righe_ruota.extend(_righe_rotazione(contesto, oggetto))
+    righe_ruota.extend(
+        (
+            _riga(
+                _azione(comandi.ID_RUOTA_PASSO, TESTI["AZIONE_RUOTA_SINISTRA"], "BACK", parametri=(("verso", "sinistra"),)),
+                _azione(comandi.ID_RUOTA_PASSO, TESTI["AZIONE_RUOTA_DESTRA"], "FORWARD", parametri=(("verso", "destra"),)),
+            ),
+            _riga(Etichetta(TESTI["ETICHETTA_GRADI_ROTAZIONE"].format(gradi=gradi))),
+            _riga(_azione(comandi.ID_STRUMENTO_RUOTA, TESTI["AZIONE_STRUMENTO_RUOTA"], "ORIENTATION_GIMBAL")),
+        )
     )
-    scala = _gruppo(
-        TESTI["GRUPPO_INGRANDISCI"],
-        _riga(
-            _azione(comandi.ID_SCALA_PASSO, TESTI["AZIONE_PIU_GRANDE"], "ADD", parametri=(("verso", "grande"),)),
-            _azione(comandi.ID_SCALA_PASSO, TESTI["AZIONE_PIU_PICCOLO"], "REMOVE", parametri=(("verso", "piccolo"),)),
-        ),
-        _riga(Etichetta(TESTI["ETICHETTA_PERCENTUALE"].format(percentuale=percentuale))),
+    ruota = _gruppo(TESTI["GRUPPO_RUOTA"], *righe_ruota)
+
+    righe_scala: list[Riga] = []
+    if oggetto is not None:
+        righe_scala.append(
+            _riga(
+                Etichetta(
+                    _unita(
+                        contesto, TESTI["ETICHETTA_DIMENSIONE"], contesto.unita_lunghezza
+                    )
+                )
+            )
+        )
+        righe_scala.append(_riga_misure(oggetto, "dimensions"))
+    righe_scala.extend(
+        (
+            _riga(
+                _azione(comandi.ID_SCALA_PASSO, TESTI["AZIONE_PIU_GRANDE"], "ADD", parametri=(("verso", "grande"),)),
+                _azione(comandi.ID_SCALA_PASSO, TESTI["AZIONE_PIU_PICCOLO"], "REMOVE", parametri=(("verso", "piccolo"),)),
+            ),
+            _riga(Etichetta(TESTI["ETICHETTA_PERCENTUALE"].format(percentuale=percentuale))),
+            _riga(_azione(comandi.ID_STRUMENTO_SCALA, TESTI["AZIONE_STRUMENTO_SCALA"], "FULLSCREEN_ENTER")),
+        )
     )
+    scala = _gruppo(TESTI["GRUPPO_INGRANDISCI"], *righe_scala)
+
     mouse = _gruppo(
         TESTI["GRUPPO_MOUSE"],
         _riga(
@@ -505,12 +651,25 @@ def _gruppo_altre_azioni(contesto: Contesto, oggetto: Oggetto) -> Gruppo:
     righe = [
         _riga(*prima_riga),
         _riga(
+            _azione(comandi.ID_CENTRA, TESTI["AZIONE_CENTRA"], "PIVOT_BOUNDBOX"),
+            _azione(
+                comandi.ID_APPOGGIA_SUL_PIANO,
+                TESTI["AZIONE_APPOGGIA_SUL_PIANO"],
+                "SNAP_FACE",
+            ),
+        ),
+        _riga(
+            _azione(comandi.ID_COPIA, TESTI["AZIONE_COPIA"], "COPYDOWN"),
+            _azione(comandi.ID_INCOLLA, TESTI["AZIONE_INCOLLA"], "PASTEDOWN"),
+        ),
+        _riga(
             _azione(
                 comandi.ID_DUPLICA,
                 TESTI["AZIONE_DUPLICA"],
                 "DUPLICATE",
             )
         ),
+        _riga_blocco_scelta(oggetto),
         _riga(
             _azione(
                 comandi.ID_ELIMINA,
@@ -520,6 +679,22 @@ def _gruppo_altre_azioni(contesto: Contesto, oggetto: Oggetto) -> Gruppo:
         ),
     ]
     return _gruppo(TESTI["GRUPPO_ALTRO"], *righe)
+
+
+def _riga_blocco_scelta(oggetto: Oggetto) -> Riga:
+    """Blocca o sblocca la scelta dell'oggetto: il pulsante dice cosa farà."""
+    bloccato = oggetto.bloccato
+    return _riga(
+        _azione(
+            comandi.ID_BLOCCA_SCELTA,
+            TESTI["AZIONE_SBLOCCA_SCELTA"] if bloccato else TESTI["AZIONE_BLOCCA_SCELTA"],
+            "LOCKED" if bloccato else "UNLOCKED",
+            parametri=(
+                ("oggetto", oggetto.chiave),
+                ("blocca", not bloccato),
+            ),
+        )
+    )
 
 
 def _gruppi_per_tipo(contesto: Contesto, oggetto: Oggetto, *, completo: bool) -> list[Gruppo]:
@@ -565,6 +740,26 @@ def _gruppi_per_tipo(contesto: Contesto, oggetto: Oggetto, *, completo: bool) ->
                 )
             )
         gruppi.append(_gruppo(TESTI["GRUPPO_TELECAMERA"], *righe))
+    elif oggetto.tipo == "FONT":
+        righe = [
+            _riga(
+                Campo(
+                    riferimento=configuration.RIFERIMENTO_DATI,
+                    chiave=oggetto.chiave,
+                    proprieta="body",
+                    testo=TESTI["ETICHETTA_SCRITTA"],
+                )
+            ),
+            _riga(
+                Campo(
+                    riferimento=configuration.RIFERIMENTO_DATI,
+                    chiave=oggetto.chiave,
+                    proprieta="size",
+                    testo=TESTI["ETICHETTA_ALTEZZA_TESTO"],
+                )
+            ),
+        ]
+        gruppi.append(_gruppo(TESTI["GRUPPO_TESTO"], *righe))
     return gruppi
 
 

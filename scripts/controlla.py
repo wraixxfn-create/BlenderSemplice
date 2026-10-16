@@ -41,6 +41,7 @@ FILE_RICHIESTI = (
     CARTELLA_ADDON / "operators" / "vista.py",
     CARTELLA_ADDON / "scene" / "__init__.py",
     CARTELLA_ADDON / "scene" / "messaggi.py",
+    CARTELLA_ADDON / "scene" / "misure.py",
     CARTELLA_ADDON / "scene" / "nomi.py",
     CARTELLA_ADDON / "scene" / "primitives.py",
     CARTELLA_ADDON / "scene" / "stato.py",
@@ -79,6 +80,7 @@ FILE_RICHIESTI = (
     ROOT / "docs" / "LIMITAZIONI.md",
     ROOT / "docs" / "LICENZE.md",
     ROOT / "docs" / "REVISIONE_UX.md",
+    ROOT / "docs" / "VERIFICA_MANUALE.md",
     ROOT / "docs" / "SVILUPPO.md",
     ROOT / "docs" / "VERIFICA_LINGUISTICA.md",
 )

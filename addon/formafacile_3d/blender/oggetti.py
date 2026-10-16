@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
+
 import bpy
 
 from ..localization import TESTI
@@ -138,3 +140,76 @@ def imposta_telecamera_principale(scena, oggetto) -> bool:
         return False
     scena.camera = oggetto
     return True
+
+
+@dataclass(frozen=True)
+class EsitoBlocco:
+    """Quanti oggetti sono stati bloccati o sbloccati davvero."""
+
+    applicati: int = 0
+    saltati: int = 0
+
+
+def blocca_scelta(oggetti, blocca: bool, view_layer=None) -> EsitoBlocco:
+    """Blocca o sblocca la scelta degli oggetti indicati.
+
+    Blender non tiene scelto un oggetto che non si può scegliere: quando si
+    blocca, l'oggetto viene tolto dalla scelta e, se era quello attivo, il
+    ruolo passa a un altro oggetto ancora scelto. Lo scambio è fatto qui per
+    non lasciare l'interfaccia senza un oggetto attivo.
+    """
+    applicati = saltati = 0
+    for oggetto in list(oggetti):
+        if oggetto is None:
+            continue
+        if not hasattr(oggetto, "hide_select"):
+            saltati += 1
+            continue
+        try:
+            oggetto.hide_select = bool(blocca)
+        except (AttributeError, ReferenceError, RuntimeError, TypeError):
+            saltati += 1
+            continue
+        if blocca and view_layer is not None:
+            _togli_dalla_scelta(oggetto, view_layer)
+        applicati += 1
+    aggiorna_vista()
+    return EsitoBlocco(applicati, saltati)
+
+
+def _togli_dalla_scelta(oggetto, view_layer) -> None:
+    """Toglie un oggetto dalla scelta e sistema l'oggetto attivo.
+
+    Bloccare la scelta in Blender toglie già l'oggetto dalla scelta da solo, ma
+    lo lascia attivo: un oggetto che non si può scegliere non deve restare
+    attivo, perché i pannelli continuerebbero a mostrarlo. Se ci sono altri
+    oggetti scelti, il ruolo passa al primo di loro.
+
+    Il confronto con l'oggetto attivo è fatto per nome: i riferimenti Python
+    degli oggetti Blender non si possono paragonare con `is`, perché lo stesso
+    oggetto può avere più involucri Python vivi nello stesso momento.
+    """
+    try:
+        if oggetto.select_get():
+            oggetto.select_set(False)
+    except (AttributeError, ReferenceError, RuntimeError):
+        pass
+    attivo = view_layer.objects.active
+    if attivo is None or attivo.name != oggetto.name:
+        return
+    rimasti = [
+        altro
+        for altro in view_layer.objects
+        if altro.name != oggetto.name and _scelto(altro)
+    ]
+    try:
+        view_layer.objects.active = rimasti[0] if rimasti else None
+    except (AttributeError, ReferenceError, RuntimeError, TypeError):
+        return
+
+
+def _scelto(oggetto) -> bool:
+    try:
+        return bool(oggetto.select_get())
+    except (AttributeError, ReferenceError, RuntimeError):
+        return False

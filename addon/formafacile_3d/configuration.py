@@ -20,6 +20,38 @@ FATTORE_SCALA_PREDEFINITO = 1.1
 FATTORE_LUCE = 1.5
 POTENZA_LUCE_MINIMA = 0.01
 
+# Grandezza delle nuove forme, in metri: il lato più lungo dell'oggetto.
+# Con 2 metri un cubo, una sfera, un cilindro e un cono nuovi sono larghi
+# esattamente come quelli di Blender, quindi chi conosce già Blender non trova
+# sorprese e chi inizia ha subito qualcosa di ben visibile.
+DIMENSIONE_FORMA_PREDEFINITA = 2.0
+DIMENSIONE_FORMA_MINIMA = 0.05
+DIMENSIONE_FORMA_MASSIMA = 100.0
+
+# Il testo usa metà della grandezza come altezza della scritta: con il valore
+# predefinito si ottiene l'altezza standard di Blender, un metro.
+FATTORE_ALTEZZA_TESTO = 0.5
+
+# Altezza a cui viene messa una nuova luce, sopra il cursore 3D.
+ALTEZZA_LUCE = 4.0
+
+# Strumenti nativi di Blender che mostrano le frecce nella Vista 3D.
+# Sono gli stessi della barra degli strumenti: attivarli è il modo pubblico per
+# far comparire le maniglie di spostamento, rotazione e dimensione.
+STRUMENTO_SPOSTA = "builtin.move"
+STRUMENTO_RUOTA = "builtin.rotate"
+STRUMENTO_SCALA = "builtin.scale"
+
+# Interruttori della Vista 3D che rendono visibili le maniglie. Vengono accesi
+# insieme allo strumento: se l'utente li aveva spenti, le frecce non si vedono.
+MOSTRA_MANIGLIE = (
+    "show_gizmo",
+    "show_gizmo_context",
+    "show_gizmo_object_translate",
+    "show_gizmo_object_rotate",
+    "show_gizmo_object_scale",
+)
+
 # Dimensione minima di un oggetto: sotto questa soglia le forme diventano
 # invisibili e difficili da riprendere, quindi il comando avvisa e non applica.
 SCALA_MINIMA = 0.01
@@ -53,6 +85,7 @@ GRUPPO_STATO_SCENA = "formafacile"
 CAMPO_MODALITA = "formafacile.modalita"
 CAMPO_FILTRO = "formafacile.filtro"
 CAMPO_PASSO = "formafacile.passo"
+CAMPO_GRANDEZZA_FORMA = "formafacile.grandezza_forma"
 CAMPO_MESSAGGIO = "formafacile.messaggio"
 CAMPO_TEMPO_MESSAGGIO = "formafacile.tempo_messaggio"
 

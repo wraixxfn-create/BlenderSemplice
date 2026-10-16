@@ -6,7 +6,13 @@ restano leggibili e il comportamento è verificabile in un solo punto.
 
 from __future__ import annotations
 
+import math
+
 import bpy
+
+# Un quarto di giro attorno all'asse X: rimette in piedi una scritta creata da
+# Blender, che altrimenti nascerebbe distesa sul piano di lavoro.
+ANGOLO_TESTO_IN_PIEDI = math.pi / 2.0
 
 
 def _oggetto_attivo(context):
@@ -58,6 +64,43 @@ def aggiungi_piano_nativo(context, lato: float, posizione=None):
         parametri["location"] = tuple(posizione)
     _esegui(bpy.ops.mesh.primitive_plane_add, **parametri)
     return _oggetto_attivo(context)
+
+
+def aggiungi_cono_nativo(context, raggio: float, altezza: float, posizione=None):
+    """Crea un cono con l'operatore Blender (base piena, punta in alto)."""
+    parametri = {"radius1": raggio, "radius2": 0.0, "depth": altezza}
+    if posizione is not None:
+        parametri["location"] = tuple(posizione)
+    _esegui(bpy.ops.mesh.primitive_cone_add, **parametri)
+    return _oggetto_attivo(context)
+
+
+def aggiungi_toro_nativo(
+    context, raggio_maggiore: float, raggio_minore: float, posizione=None
+):
+    """Crea una ciambella con l'operatore Blender."""
+    parametri = {"major_radius": raggio_maggiore, "minor_radius": raggio_minore}
+    if posizione is not None:
+        parametri["location"] = tuple(posizione)
+    _esegui(bpy.ops.mesh.primitive_torus_add, **parametri)
+    return _oggetto_attivo(context)
+
+
+def aggiungi_testo_nativo(context, altezza: float, posizione=None):
+    """Crea una scritta con l'operatore Blender, già in piedi.
+
+    Blender crea il testo disteso sul piano; qui viene ruotato di un quarto di
+    giro attorno all'asse X, così la scritta sta in piedi e si legge guardando
+    la scena dalla vista iniziale. È una rotazione normale, annullabile.
+    """
+    parametri = {"radius": altezza}
+    if posizione is not None:
+        parametri["location"] = tuple(posizione)
+    _esegui(bpy.ops.object.text_add, **parametri)
+    oggetto = _oggetto_attivo(context)
+    if str(getattr(oggetto, "rotation_mode", "XYZ")) == "XYZ":
+        oggetto.rotation_euler = (ANGOLO_TESTO_IN_PIEDI, 0.0, 0.0)
+    return oggetto
 
 
 def aggiungi_luce_nativa(context, posizione=None):
