@@ -10,12 +10,23 @@ from __future__ import annotations
 
 from .. import comandi, configuration
 from ..localization import TESTI
+from ..scene import aspetto
 from ..scene import guide, libreria
 from ..scene import misure
 from ..scene import regole_modellazione as regole
 from ..scene import testi as testi_lunghi
 from . import icone
-from .modello import Azione, Campo, Contesto, Etichetta, Gruppo, Oggetto, Pannello, Riga
+from .modello import (
+    Anteprima,
+    Azione,
+    Campo,
+    Contesto,
+    Etichetta,
+    Gruppo,
+    Oggetto,
+    Pannello,
+    Riga,
+)
 
 
 def costruisci_piano(contesto: Contesto) -> tuple[Pannello, ...]:
@@ -26,6 +37,7 @@ def costruisci_piano(contesto: Contesto) -> tuple[Pannello, ...]:
         Pannello("libreria", _pannello_libreria(contesto)),
         Pannello("oggetto", _pannello_oggetto(contesto)),
         Pannello("modella", _pannello_modella(contesto)),
+        Pannello("aspetto", _pannello_aspetto(contesto)),
     ]
     if contesto.modalita == configuration.MODALITA_COMPLETA:
         pannelli.append(Pannello("completo", _pannello_completo(contesto)))
@@ -148,7 +160,10 @@ def _pannello_principale(contesto: Contesto) -> tuple[Gruppo, ...]:
         )
     gruppi.append(_gruppo(TESTI["GRUPPO_GUARDA"], *vista))
 
-    consigli = [_riga(Etichetta(TESTI["CONSIGLIO_ROTAZIONE"], icona="INFO"))]
+    consigli = [
+        _riga(Etichetta(TESTI["CONSIGLIO_ROTAZIONE"], icona="INFO")),
+        *_testo_lungo(TESTI["CONSIGLIO_ASPETTO"], icona="INFO"),
+    ]
     if contesto.modalita == configuration.MODALITA_COMPLETA:
         consigli.insert(0, _riga(Etichetta(TESTI["ETICHETTA_AVANZATO_ATTIVO"], icona="INFO")))
     gruppi.append(_gruppo(TESTI["GRUPPO_AIUTO"], *consigli))
@@ -1156,11 +1171,14 @@ def _nome_breve(nome: str) -> str:
     return testi_lunghi.accorcia(nome, configuration.LUNGHEZZA_MASSIMA_ETICHETTA - 8)
 
 
-def _testo_lungo(testo: str) -> tuple[Riga, ...]:
+def _testo_lungo(
+    testo: str, *, icona: str = "", avviso: bool = False
+) -> tuple[Riga, ...]:
     """Spiegazione su più righe: nella barra stretta le frasi lunghe si tagliano."""
+    righe = testi_lunghi.righe_di_testo(testo, configuration.LUNGHEZZA_MASSIMA_ETICHETTA)
     return tuple(
-        _riga(Etichetta(riga))
-        for riga in testi_lunghi.righe_di_testo(testo, configuration.LUNGHEZZA_MASSIMA_ETICHETTA)
+        _riga(Etichetta(riga, icona=icona if indice == 0 else "", avviso=avviso))
+        for indice, riga in enumerate(righe)
     )
 
 
@@ -1287,6 +1305,416 @@ def _campo_rotazione(modo: str) -> str:
     if modo == "AXIS_ANGLE":
         return "rotation_axis_angle"
     return "rotation_euler"
+
+
+# ------------------------------------------------------------------- aspetto
+
+# Icona di ogni illuminazione pronta, con gli stessi nomi usati dai pulsanti.
+ICONE_ILLUMINAZIONE = {
+    aspetto.ILLUMINAZIONE_PRODOTTO: "LIGHT_AREA",
+    aspetto.ILLUMINAZIONE_INTERNO_SEMPLICE: "LIGHT_POINT",
+    aspetto.ILLUMINAZIONE_ESTERNO_SEMPLICE: "LIGHT_SUN",
+    aspetto.ILLUMINAZIONE_STUDIO_NEUTRO: "WORLD",
+}
+
+
+def _pannello_aspetto(contesto: Contesto) -> tuple[Gruppo, ...]:
+    """Materiali, luci, telecamera e immagine finale in un pannello solo.
+
+    L'ordine segue il lavoro vero: prima il materiale, poi la luce, poi come si
+    guarda la scena e, alla fine, l'immagine. È il pannello che risponde alla
+    domanda "come faccio a farla venire bella?", non a "quali sono le
+    proprietà?".
+    """
+    gruppi = [
+        _gruppo_aspetto_materiale(contesto),
+        _gruppo_aspetto_colore(contesto),
+        _gruppo_aspetto_superficie(contesto),
+        _gruppo_aspetto_illuminazione(contesto),
+        _gruppo_aspetto_telecamera(contesto),
+        _gruppo_aspetto_immagine(contesto),
+    ]
+    if contesto.modalita == configuration.MODALITA_COMPLETA:
+        gruppi.append(_gruppo_aspetto_immagine_avanzata(contesto))
+    return tuple(gruppi)
+
+
+def _gruppo_aspetto_materiale(contesto: Contesto) -> Gruppo:
+    """Materiale pronto, anteprima di quello applicato e variazione indipendente."""
+    valori = aspetto.materiale(contesto.materiale)
+    righe = [
+        _riga(
+            Campo(
+                riferimento=configuration.RIFERIMENTO_SCENA,
+                chiave=configuration.CHIAVE_SCENA,
+                proprieta=configuration.CAMPO_MATERIALE_SCELTO,
+                testo=TESTI["ETICHETTA_MATERIALE_SCELTO"],
+            )
+        ),
+        _riga(
+            Etichetta(
+                (
+                    TESTI["ETICHETTA_MATERIALE_APPLICATO"].format(nome=contesto.materiale_applicato)
+                    if contesto.materiale_applicato
+                    else TESTI["ETICHETTA_MATERIALE_NESSUNO"]
+                ),
+                icona="MATERIAL" if contesto.materiale_applicato else "INFO",
+            )
+        ),
+        _riga(
+            Anteprima(
+                chiave=configuration.CHIAVE_MATERIALE,
+                testo=TESTI["ANTEPRIMA_MATERIALE_ASSENTE"],
+            )
+        ),
+        _riga(
+            _azione(
+                comandi.ID_APPLICA_MATERIALE,
+                TESTI["AZIONE_APPLICA_MATERIALE"],
+                comandi.ICONE_ASPETTO[comandi.ID_APPLICA_MATERIALE],
+            ),
+            disabilitata=not contesto.scelti or not contesto.in_modalita_oggetto,
+        ),
+        Riga(
+            (
+                _azione(
+                    comandi.ID_CREA_VARIAZIONE,
+                    TESTI["AZIONE_CREA_VARIAZIONE"],
+                    comandi.ICONE_ASPETTO[comandi.ID_CREA_VARIAZIONE],
+                ),
+            ),
+            disabilitata=not contesto.materiale_applicato or not contesto.in_modalita_oggetto,
+        ),
+    ]
+    if contesto.materiale_condiviso > 1:
+        righe.extend(
+            _testo_lungo(
+                TESTI["ETICHETTA_MATERIALE_CONDIVISO"].format(numero=contesto.materiale_condiviso),
+                icona="INFO",
+                avviso=True,
+            )
+        )
+    righe.extend(
+        _riga(Etichetta(riga))
+        for riga in testi_lunghi.righe_di_testo(
+            valori.descrizione, configuration.LUNGHEZZA_MASSIMA_ETICHETTA
+        )
+    )
+    return _gruppo(TESTI["GRUPPO_MATERIALE"], *righe)
+
+
+def _gruppo_aspetto_colore(contesto: Contesto) -> Gruppo:
+    """Tavolozza con i nomi accanto ai campioni e il colore libero."""
+    righe = []
+    colori = [aspetto.TAVOLOZZA[chiave] for chiave in aspetto.ORDINE_TAVOLOZZA]
+    for inizio in range(0, len(colori), 3):
+        righe.append(
+            _riga(
+                *(
+                    _azione(
+                        comandi.ID_SCEGLI_COLORE,
+                        colore.nome,
+                        "COLOR",
+                        parametri=(("colore", colore.chiave),),
+                    )
+                    for colore in colori[inizio : inizio + 3]
+                )
+            )
+        )
+    righe.append(
+        _riga(
+            Campo(
+                riferimento=configuration.RIFERIMENTO_SCENA,
+                chiave=configuration.CHIAVE_SCENA,
+                proprieta=configuration.CAMPO_MATERIALE_COLORE,
+                testo=TESTI["ETICHETTA_COLORE_MATERIALE"],
+            )
+        )
+    )
+    return _gruppo(TESTI["GRUPPO_TAVOLOZZA"], *righe)
+
+
+def _gruppo_aspetto_superficie(contesto: Contesto) -> Gruppo:
+    """Ruvidità, aspetto metallico e trasparenza, dove la trasparenza ha senso."""
+    righe = [
+        _riga(
+            Campo(
+                riferimento=configuration.RIFERIMENTO_SCENA,
+                chiave=configuration.CHIAVE_SCENA,
+                proprieta=configuration.CAMPO_MATERIALE_RUVIDITA,
+                testo=TESTI["ETICHETTA_RUVIDITA"],
+            )
+        ),
+        _riga(
+            Campo(
+                riferimento=configuration.RIFERIMENTO_SCENA,
+                chiave=configuration.CHIAVE_SCENA,
+                proprieta=configuration.CAMPO_MATERIALE_METALLICO,
+                testo=TESTI["ETICHETTA_METALLICO"],
+            )
+        ),
+    ]
+    if contesto.trasparenza_disponibile:
+        righe.append(
+            _riga(
+                Campo(
+                    riferimento=configuration.RIFERIMENTO_SCENA,
+                    chiave=configuration.CHIAVE_SCENA,
+                    proprieta=configuration.CAMPO_MATERIALE_TRASPARENZA,
+                    testo=TESTI["ETICHETTA_TRASPARENZA_MATERIALE"],
+                )
+            )
+        )
+    else:
+        # Il campo sparisce invece di restare grigio: un campo spento non si
+        # legge e sembrerebbe rotto. Al suo posto c'è la spiegazione del perché.
+        righe.extend(_testo_lungo(TESTI["NOTA_TRASPARENZA_NON_DISPONIBILE"], icona="INFO"))
+    righe.extend(_testo_lungo(TESTI["NOTA_VALORI_SI_APPLICANO"], icona="INFO"))
+    return _gruppo(TESTI["GRUPPO_SUPERFICIE"], *righe)
+
+
+def _gruppo_aspetto_illuminazione(contesto: Contesto) -> Gruppo:
+    """Illuminazione automatica, situazioni tipiche, sfondo e potenza."""
+    righe = [
+        _riga(
+            _azione(
+                comandi.ID_ILLUMINAZIONE_AUTOMATICA,
+                TESTI["AZIONE_ILLUMINAZIONE_AUTOMATICA"],
+                comandi.ICONE_ASPETTO[comandi.ID_ILLUMINAZIONE_AUTOMATICA],
+            )
+        )
+    ]
+    presets = [aspetto.ILLUMINAZIONI[chiave] for chiave in aspetto.ORDINE_ILLUMINAZIONI]
+    for inizio in range(0, len(presets), 2):
+        righe.append(
+            _riga(
+                *(
+                    _azione(
+                        comandi.ID_ILLUMINAZIONE_PRESET,
+                        preset.nome,
+                        ICONE_ILLUMINAZIONE.get(preset.chiave, "LIGHT_AREA"),
+                        parametri=(("preset", preset.chiave),),
+                    )
+                    for preset in presets[inizio : inizio + 2]
+                )
+            )
+        )
+    if contesto.illuminazione:
+        righe.append(
+            _riga(
+                Etichetta(
+                    TESTI["ETICHETTA_ILLUMINAZIONE_ATTUALE"].format(
+                        nome=aspetto.illuminazione(contesto.illuminazione).nome,
+                        numero=contesto.illuminazione_luci,
+                    ),
+                    icona="LIGHT",
+                )
+            )
+        )
+    else:
+        righe.extend(_testo_lungo(TESTI["ETICHETTA_ILLUMINAZIONE_NESSUNA"], icona="INFO"))
+    righe.extend(
+        (
+            _riga(
+                Campo(
+                    riferimento=configuration.RIFERIMENTO_SCENA,
+                    chiave=configuration.CHIAVE_SCENA,
+                    proprieta=configuration.CAMPO_SFONDO_COLORE,
+                    testo=TESTI["ETICHETTA_SFONDO_COLORE"],
+                )
+            ),
+            _riga(
+                Campo(
+                    riferimento=configuration.RIFERIMENTO_SCENA,
+                    chiave=configuration.CHIAVE_SCENA,
+                    proprieta=configuration.CAMPO_SFONDO_INTENSITA,
+                    testo=TESTI["ETICHETTA_SFONDO_INTENSITA"],
+                )
+            ),
+            _riga(
+                Campo(
+                    riferimento=configuration.RIFERIMENTO_SCENA,
+                    chiave=configuration.CHIAVE_SCENA,
+                    proprieta=configuration.CAMPO_LUCE_INTENSITA,
+                    testo=TESTI["ETICHETTA_LUCE_INTENSITA"],
+                )
+            ),
+            _riga(
+                _azione(
+                    comandi.ID_APPLICA_AMBIENTE,
+                    TESTI["AZIONE_APPLICA_AMBIENTE"],
+                    comandi.ICONE_ASPETTO[comandi.ID_APPLICA_AMBIENTE],
+                )
+            ),
+        )
+    )
+    return _gruppo(TESTI["GRUPPO_ILLUMINAZIONE"], *righe)
+
+
+def _gruppo_aspetto_telecamera(contesto: Contesto) -> Gruppo:
+    """Telecamera, inquadratura e i due modi di guardare la scena."""
+    righe = [
+        _riga(
+            _azione(
+                comandi.ID_AGGIUNGI_TELECAMERA,
+                TESTI["AZIONE_AGGIUNGI_TELECAMERA"],
+                comandi.ICONE_ASPETTO[comandi.ID_AGGIUNGI_TELECAMERA],
+            )
+        )
+    ]
+    if contesto.telecamera:
+        righe.append(
+            _riga(
+                Etichetta(
+                    TESTI["ETICHETTA_TELECAMERA_ATTUALE"].format(nome=contesto.telecamera),
+                    icona="CAMERA_DATA",
+                )
+            )
+        )
+    else:
+        righe.append(_riga(Etichetta(TESTI["ETICHETTA_TELECAMERA_NESSUNA"], icona="INFO")))
+    righe.extend(
+        (
+            Riga(
+                (
+                    _azione(
+                        comandi.ID_INQUADRA_TELECAMERA,
+                        TESTI["AZIONE_INQUADRA_TELECAMERA"],
+                        comandi.ICONE_ASPETTO[comandi.ID_INQUADRA_TELECAMERA],
+                    ),
+                    _azione(
+                        comandi.ID_RIPRISTINA_TELECAMERA,
+                        TESTI["AZIONE_RIPRISTINA_TELECAMERA"],
+                        comandi.ICONE_ASPETTO[comandi.ID_RIPRISTINA_TELECAMERA],
+                    ),
+                ),
+                disabilitata=not contesto.telecamera,
+            ),
+            Riga(
+                (
+                    _azione(
+                        comandi.ID_CENTRA_VISTA,
+                        TESTI["AZIONE_CENTRA_VISTA"],
+                        comandi.ICONE_ASPETTO[comandi.ID_CENTRA_VISTA],
+                    ),
+                ),
+                disabilitata=not contesto.vista_disponibile,
+            ),
+            Riga(
+                (
+                    _azione(
+                        comandi.ID_VISTA_LAVORO,
+                        TESTI["AZIONE_VISTA_LAVORO"],
+                        comandi.ICONE_ASPETTO[comandi.ID_VISTA_LAVORO],
+                        premuto=not contesto.anteprima_immagine,
+                    ),
+                    _azione(
+                        comandi.ID_ANTEPRIMA_RENDER,
+                        TESTI["AZIONE_ANTEPRIMA_IMMAGINE"],
+                        comandi.ICONE_ASPETTO[comandi.ID_ANTEPRIMA_RENDER],
+                        premuto=contesto.anteprima_immagine,
+                    ),
+                ),
+                disabilitata=not contesto.vista_disponibile,
+            ),
+            *_testo_lungo(
+                (
+                    TESTI["ETICHETTA_MODO_VISTA_ANTEPRIMA"]
+                    if contesto.anteprima_immagine
+                    else TESTI["ETICHETTA_MODO_VISTA_LAVORO"]
+                ),
+                icona="INFO",
+            ),
+        )
+    )
+    return _gruppo(TESTI["GRUPPO_TELECAMERA_VISTA"], *righe)
+
+
+def _gruppo_aspetto_immagine(contesto: Contesto) -> Gruppo:
+    """Qualità, cartella scelta e creazione dell'immagine finale."""
+    righe = [
+        _riga(
+            Campo(
+                riferimento=configuration.RIFERIMENTO_SCENA,
+                chiave=configuration.CHIAVE_SCENA,
+                proprieta=configuration.CAMPO_QUALITA,
+                testo=TESTI["ETICHETTA_QUALITA"],
+            )
+        ),
+        _riga(
+            Etichetta(
+                TESTI["ETICHETTA_QUALITA_RIASSUNTO"].format(
+                    nome=aspetto.qualita(contesto.qualita).nome,
+                    larghezza=contesto.immagine_larghezza,
+                    altezza=contesto.immagine_altezza,
+                    campioni=contesto.immagine_campioni,
+                )
+            )
+        ),
+        _riga(
+            Campo(
+                riferimento=configuration.RIFERIMENTO_SCENA,
+                chiave=configuration.CHIAVE_SCENA,
+                proprieta=configuration.CAMPO_CARTELLA_IMMAGINE,
+                testo=TESTI["ETICHETTA_CARTELLA_IMMAGINE"],
+            )
+        ),
+    ]
+    if not contesto.telecamera:
+        righe.extend(_testo_lungo(TESTI["ERRORE_TELECAMERA_MANCANTE"], avviso=True))
+    righe.append(
+        Riga(
+            (
+                _azione(
+                    comandi.ID_CREA_IMMAGINE_FINALE,
+                    TESTI["AZIONE_CREA_IMMAGINE_FINALE"],
+                    comandi.ICONE_ASPETTO[comandi.ID_CREA_IMMAGINE_FINALE],
+                ),
+            ),
+            disabilitata=not contesto.in_modalita_oggetto,
+        )
+    )
+    return _gruppo(TESTI["GRUPPO_IMMAGINE"], *righe)
+
+
+def _gruppo_aspetto_immagine_avanzata(contesto: Contesto) -> Gruppo:
+    """Valori profondi dell'immagine, per chi vuole di più (modalità Completa)."""
+    righe = [
+        _riga(
+            Campo(
+                riferimento=configuration.RIFERIMENTO_SCENA,
+                chiave=configuration.CHIAVE_SCENA,
+                proprieta=configuration.CAMPO_RENDER_PERCENTUALE,
+                testo=TESTI["ETICHETTA_RENDER_PERCENTUALE"],
+            )
+        ),
+        _riga(
+            Campo(
+                riferimento=configuration.RIFERIMENTO_SCENA,
+                chiave=configuration.CHIAVE_SCENA,
+                proprieta=configuration.CAMPO_RENDER_CAMPIONI,
+                testo=TESTI["ETICHETTA_RENDER_CAMPIONI"],
+            )
+        ),
+        _riga(
+            Campo(
+                riferimento=configuration.RIFERIMENTO_SCENA,
+                chiave=configuration.CHIAVE_SCENA,
+                proprieta=configuration.CAMPO_RENDER_MOTORE,
+                testo=TESTI["ETICHETTA_RENDER_MOTORE"],
+            )
+        ),
+        _riga(
+            Campo(
+                riferimento=configuration.RIFERIMENTO_SCENA,
+                chiave=configuration.CHIAVE_SCENA,
+                proprieta=configuration.CAMPO_RENDER_FORMATO,
+                testo=TESTI["ETICHETTA_RENDER_FORMATO"],
+            )
+        ),
+        *_testo_lungo(TESTI["ETICHETTA_IMMAGINE_AVANZATA_NOTA"], icona="INFO"),
+    ]
+    return _gruppo(TESTI["GRUPPO_IMMAGINE_AVANZATA"], *righe)
 
 
 # ------------------------------------------------------------------- aiutanti

@@ -15,6 +15,16 @@ from ..localization import TESTI
 ICONE_USATE = frozenset(
     {
         "ADD",
+        "WORLD",
+        "SHADING_SOLID",
+        "SHADING_RENDERED",
+        "RENDER_STILL",
+        "MATERIAL",
+        "LIGHT_SUN",
+        "LIGHT_POINT",
+        "LIGHT_AREA",
+        "FILE_IMAGE",
+        "COLOR",
         "ALIGN_LEFT",
         "ARMATURE_DATA",
         "BACK",

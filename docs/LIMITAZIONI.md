@@ -67,6 +67,52 @@ ancora provato a mano.
 - **Guida passo passo**: **Inizia la guida** costruisce una casetta in 13 passi verificati, con
   **Indietro**, **Avanti**, **Esegui il passo** e **Chiudi**; ogni passo spiega che cosa sta per fare
   e usa solo comandi che esistono davvero.
+- **Dai un bell'aspetto alla scena**: sei **materiali pronti** (plastica opaca, metallo, legno
+  stilizzato, vetro, ceramica, gomma) con i valori veri dichiarati nel codice, **anteprima** del
+  materiale applicato disegnata da Blender, **tavolozza di colori** con il nome accanto al campione e
+  campi **Colore**, **Ruvidità**, **Metallico** e **Trasparenza** (solo per i materiali che la
+  prevedono). **Applica il materiale** crea un materiale nuovo per ogni oggetto, quindi cambiare un
+  oggetto non cambia gli altri; quando un materiale è condiviso il pannello lo dice e **Crea
+  variazione** ne fa una copia indipendente.
+- **Illuminazione automatica** con valori regolati sulla grandezza della scena e quattro situazioni
+  tipiche (**Prodotto**, **Interno semplice**, **Esterno semplice**, **Studio neutro**), campi per
+  **Colore di sfondo**, **Luminosità dello sfondo** e **Potenza delle luci**, e **Applica sfondo e
+  intensità**. Le luci di FormaFacile stanno in una raccolta dedicata e vengono sostituite cambiando
+  illuminazione; le luci create dall'utente non vengono toccate.
+- **Telecamera**: **Aggiungi telecamera** (inquadra la scena e diventa quella principale),
+  **Inquadra con la telecamera** (distanza calcolata sull'apertura della telecamera e sulla forma vera
+  degli oggetti), **Centra la vista** e **Ripristina la telecamera**. La distinzione fra **Vista di
+  lavoro** e **Anteprima dell'immagine** è scritta nel pannello e si vede nella Vista 3D.
+- **Crea immagine finale**: qualità **Anteprima**, **Standard** e **Alta qualità** con percentuale di
+  risoluzione e campioni in chiaro; nella modalità completa percentuale, campioni, motore (**Come in
+  Blender**, **EEVEE**, **Cycles**) e formato (**PNG**, **JPEG**). Controlli prima di iniziare
+  (telecamera, cartella, spazio su disco, stima della memoria, numero di pixel), avanzamento di Blender
+  con interruzione con `Esc` quando c'è una finestra, e rilettura del file creato: se l'immagine non si
+  apre, il comando lo dice invece di dichiarare un successo.
+
+### Limiti dell'aspetto della scena e dell'immagine finale, verificati
+
+- I materiali pronti sono sei e tutti realistici solo per i valori dichiarati: nessuno finge un aspetto
+  che Blender non sappia riprodurre (per esempio il legno non ha venature disegnate, perché non c'è
+  una texture inclusa).
+- La **trasparenza** si regola solo sui materiali che la prevedono (il vetro): sugli altri il campo non
+  compare e il valore resta a zero, così un materiale opaco non diventa una superficie "trasparente"
+  per errore.
+- Cambiare **Colore**, **Ruvidità**, **Metallico** o **Trasparenza** non cambia da solo l'oggetto:
+  serve **Applica il materiale**. Il pannello lo scrive accanto ai campi.
+- **Illuminazione** e le altre azioni di FormaFacile non spostano le luci dell'utente: la nuova
+  illuminazione sostituisce solo le luci con il segno di FormaFacile.
+- **Inquadra con la telecamera** e **Centra la vista** non fanno nulla se non c'è niente da inquadrare:
+  il messaggio lo dice. **Ripristina la telecamera** funziona solo sulle telecamere create da
+  FormaFacile (le altre non hanno una posizione iniziale registrata) e il messaggio lo spiega.
+- La **creazione dell'immagine** è l'unica operazione lenta: l'avanzamento di Blender e l'interruzione
+  con `Esc` funzionano nella finestra grafica, mentre senza finestra il comando aspetta la fine del
+  lavoro. Il disegno dell'avanzamento e `Esc` non sono stati provati a mano.
+- Il **motore EEVEE** ha bisogno di una scheda grafica funzionante: se la creazione fallisce, il
+  messaggio è in italiano e suggerisce una qualità più bassa; in questo ambiente senza schermo il
+  motore EEVEE non è stato provato (la prova dell'immagine vera usa **Cycles**).
+- Il file creato viene salvato nella cartella scelta con un nome che contiene data e ora: immagini
+  create nello stesso secondo si distinguono solo grazie ai secondi nel nome.
 
 ### Limiti degli strumenti guidati, verificati
 
@@ -86,12 +132,12 @@ ancora provato a mano.
 
 ## Funzioni non ancora presenti
 
-Non ci sono ancora strumenti generali per materiali e colori, fondali indipendenti, anteprima e
-immagine finale, animazione, gerarchia fra oggetti, salvataggio e riapertura con un flusso FormaFacile
+Non ci sono ancora animazione, gerarchia fra oggetti, salvataggio e riapertura con un flusso FormaFacile
 dedicato, importazione ed esportazione, altre guide passo passo oltre a quella della casetta e
-assistente di intelligenza artificiale. Colori, fondale e luci si configurano soltanto nei modelli
-della libreria. **Non esistono pulsanti fittizi per queste funzioni**: i pannelli mostrano solo comandi
-che hanno un effetto reale.
+assistente di intelligenza artificiale. **Non esistono pulsanti fittizi per queste funzioni**: i
+pannelli mostrano solo comandi che hanno un effetto reale. Non ci sono materiali con texture o
+immagini esterne: i sei materiali pronti nascono dai valori dei nodi di Blender, quindi nel file `.blend`
+restano leggeri e senza risorse da scaricare.
 
 Il programma di avvio apre la scena iniziale di Blender e non sostituisce la schermata iniziale né
 crea uno spazio di lavoro personalizzato. Il punto di ingresso di FormaFacile è la barra laterale
@@ -104,7 +150,7 @@ della Vista 3D. Salvataggio e riapertura usano i normali comandi di Blender.
 - Il pacchetto `bpy==4.5.14` è installato in un ambiente virtuale separato (`.venv`, escluso dal
   repository). Non è l'applicazione completa, ma espone la stessa interfaccia di programmazione,
   quindi le prove di `tests/blender/test_addon.py` sono state **eseguite davvero**:
-  `python3 scripts/controlla.py --test-bpy` (3685 controlli superati, più 214 prove di unità).
+  `python3 scripts/controlla.py --test-bpy` (5767 controlli superati, più 269 prove di unità).
   Le librerie grafiche di sistema mancanti (`libXrender`, `libXfixes`, `libXi`, `libxkbcommon`,
   `libSM`, `libICE`, `libGL`) vengono sostituite da librerie fittizie preparate da
   `scripts/ambiente_bpy_locale.py` nella cartella `.cache/librerie_bpy`: servono solo ad avviare il
@@ -147,9 +193,25 @@ Verificato automaticamente senza finestre:
 - esistenza e funzionamento dei comandi nativi di navigazione (`view_all`, `view_axis`, …);
 - cambio di disposizione dei pannelli (divisione di un'area in due Viste 3D), registrazione delle
   viste iniziali di tutte le disposizioni disponibili, avviso chiaro quando non esiste una Vista 3D;
-- disegno dei sei pannelli (cinque in modalità Semplice) e della testata sui dati veri: ogni pulsante esiste, ogni icona è fra
+- disegno dei sette pannelli (sei in modalità Semplice) e della testata sui dati veri: ogni pulsante esiste, ogni icona è fra
   quelle verificate, ogni campo è collegato a un dato esistente, nessun testo inglese di ripiego,
   nessun nome tecnico nella modalità Semplice;
+- materiali veri creati dai valori dichiarati (colore, ruvidità, metallico, trasparenza e indice di
+  rifrazione del vetro), un materiale indipendente per ogni applicazione, variazione che copia il
+  materiale senza toccare quello di partenza, rifiuto di applicare un materiale a luci e telecamere;
+- illuminazioni dei preset: numero di luci, potenza, direzione verso il centro della scena, sfondo
+  impostato, sostituzione delle luci di FormaFacile e rispetto delle luci dell'utente, adattamento
+  automatico alla grandezza della scena e limiti dell'intensità;
+- telecamera: creazione, inquadratura calcolata, centratura senza spostare il cursore 3D, ripristino
+  della posizione iniziale e rifiuto comprensibile per una telecamera senza posizione registrata;
+- **immagine finale vera**: la qualità di anteprima usata per la prova scrive un PNG e un JPEG che
+  vengono riaperti da Blender, con grandezza, formato e luminosità controllati; il nome del file
+  contiene data e ora e finisce nella cartella scelta; i controlli precedenti rifiutano una cartella
+  inesistente, un file al posto della cartella, una risoluzione esagerata e (dove la misura è
+  disponibile) una richiesta di memoria impossibile; un salvataggio impossibile produce un errore in
+  italiano e nessun file a metà; il file viene riletto per riconoscere un finto PNG;
+- segnali di fine disegno: registrazione, rimozione, nessun accumulo e messaggio giusto per un lavoro
+  finito o interrotto;
 - elenco lungo (limite e avviso), ricerca per nome (con e senza risultati), messaggio recente e
   messaggio scaduto.
 
@@ -165,7 +227,14 @@ Non verificabile senza finestre (serve Blender grafico):
   cambia i dati dichiari `REGISTER` e `UNDO` e che **Annulla**/**Ripeti** avvisino senza danni quando
   la storia non c'è;
 - il cambio di spazio di lavoro con l'evento vero della finestra e la coesistenza con la testata
-  nativa.
+  nativa;
+- la creazione dell'immagine dal pulsante con l'avanzamento di Blender nella finestra, l'interruzione
+  con `Esc` e il messaggio di fine lavoro nella barra di stato (senza finestra il comando aspetta la
+  fine del lavoro, ed è così che è stato verificato);
+- l'anteprima del materiale disegnata da Blender dentro il pannello (`template_preview`) e il vetro
+  visto davvero in modalità "Anteprima dell'immagine": i valori del materiale sono verificati, il
+  disegno no;
+- il motore EEVEE, che in questo ambiente senza schermo non si avvia.
 
 ## Verifiche manuali richieste
 

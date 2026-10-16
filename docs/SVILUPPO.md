@@ -94,7 +94,7 @@ che cosa il pannello mostrerebbe e se i comandi, i campi e le icone esistono dav
 ## Prova visiva
 
 Avvia il programma, apri la barra laterale della Vista 3D con `N`, scegli **FormaFacile** e prova i
-cinque pannelli semplici e il pannello tecnico che compare in modalità Completa. Nella **Libreria di
+sei pannelli semplici e il pannello tecnico che compare in modalità Completa. Nella **Libreria di
 oggetti** seleziona i modelli, leggi le descrizioni, cambia misure e colori, inserisci e rimuovi le
 parti controllando che gli oggetti precedenti restino invariati. Poi crea una forma, sceglila e
 rinominala dall'elenco, nascondila e falla ricomparire, arrotondala e rispecchiala con gli strumenti

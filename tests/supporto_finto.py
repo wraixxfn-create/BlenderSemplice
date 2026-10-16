@@ -114,6 +114,22 @@ class BloccoFinto:
         self.registro.append(voce)
         return ProprietaFinta(idname, voce)
 
+    def template_preview(self, id: object, **parametri: object) -> None:  # noqa: A002
+        """Anteprima di un dato di Blender (per esempio un materiale).
+
+        Il primo argomento si chiama `id` nell'interfaccia di programmazione di
+        Blender: qui viene annotato con lo stesso nome, così il controllo sui
+        parametri accettati verifica davvero la chiamata.
+        """
+        self.registro.append(
+            {
+                "tipo": "anteprima",
+                "dati": id,
+                "parametri": {"id": id, **parametri},
+                "profondita": self.profondita,
+            }
+        )
+
     def prop(self, data: object, property: str, **parametri: object) -> None:
         self.registro.append(
             {

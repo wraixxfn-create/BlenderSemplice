@@ -2,7 +2,18 @@
 
 from __future__ import annotations
 
-from . import assets, guide, insiemi, modellazione, oggetti, scene, selezione, trasformazioni, vista
+from . import (
+    aspetto,
+    assets,
+    guide,
+    insiemi,
+    modellazione,
+    oggetti,
+    scene,
+    selezione,
+    trasformazioni,
+    vista,
+)
 
 CLASSI = (
     *assets.CLASSI,
@@ -14,4 +25,5 @@ CLASSI = (
     *modellazione.CLASSI,
     *insiemi.CLASSI,
     *guide.CLASSI,
+    *aspetto.CLASSI,
 )

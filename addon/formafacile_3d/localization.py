@@ -34,6 +34,7 @@ TESTI = MappingProxyType(
         "TITOLO_PANNELLO_COMPLETO": "Comandi di Blender",
         "TITOLO_PANNELLO_MODELLA": "Dai forma",
         "TITOLO_PANNELLO_LIBRERIA": "Libreria di oggetti",
+        "TITOLO_PANNELLO_ASPETTO": "Dai un bell'aspetto alla scena",
         # Modalità.
         "ETICHETTA_MODALITA": "Modalità",
         "MODALITA_SEMPLICE": "Semplice",
@@ -60,6 +61,9 @@ TESTI = MappingProxyType(
         "GRUPPO_TECNICO": "Comandi tecnici",
         "GRUPPO_DATI": "Dati dell'oggetto",
         "GRUPPO_AIUTO": "Consigli",
+        "CONSIGLIO_ASPETTO": (
+            "Per materiali, luci e immagine finale apri il pannello Dai un bell'aspetto alla scena."
+        ),
         "GRUPPO_SPIGOLI": "Spigoli e superficie",
         "GRUPPO_ASPETTO": "Aspetto della superficie",
         "GRUPPO_SIMILE_LISCIO": "Forma più arrotondata",
@@ -70,6 +74,13 @@ TESTI = MappingProxyType(
         "GRUPPO_GRUPPI": "Gruppi",
         "GRUPPO_MODIFICHE": "Modifiche non applicate",
         "GRUPPO_GUIDA": "Impara: una casetta",
+        "GRUPPO_MATERIALE": "Materiale pronto",
+        "GRUPPO_TAVOLOZZA": "Colore",
+        "GRUPPO_SUPERFICIE": "Superficie",
+        "GRUPPO_ILLUMINAZIONE": "Illuminazione",
+        "GRUPPO_TELECAMERA_VISTA": "Telecamera e vista",
+        "GRUPPO_IMMAGINE": "Immagine finale",
+        "GRUPPO_IMMAGINE_AVANZATA": "Impostazioni dell'immagine",
         # Campi e ricerche.
         "ETICHETTA_PASSO": "Passo",
         "AIUTO_PASSO": "Di quanto si sposta l'oggetto a ogni clic, in metri.",
@@ -436,6 +447,299 @@ TESTI = MappingProxyType(
         "AIUTO_TELECAMERA_PRINCIPALE": "Usa questa telecamera per l'immagine finale.",
         "MESSAGGIO_TELECAMERA_PRINCIPALE": "Telecamera principale: {nome}",
         "ERRORE_TELECAMERA": "Non è stato possibile usare la telecamera.",
+        # Pannello "Dai un bell'aspetto alla scena": materiali pronti.
+        "MATERIALE_NOME_PLASTICA_OPACA": "Plastica opaca",
+        "MATERIALE_DESCRIZIONE_PLASTICA_OPACA": (
+            "Superficie senza riflessi forti: non disturba la vista e va bene quasi sempre."
+        ),
+        "MATERIALE_NOME_METALLO": "Metallo",
+        "MATERIALE_DESCRIZIONE_METALLO": (
+            "Riflette l'ambiente come l'acciaio appena spazzolato: rende bene sulle forme semplici."
+        ),
+        "MATERIALE_NOME_LEGNO_STILIZZATO": "Legno stilizzato",
+        "MATERIALE_DESCRIZIONE_LEGNO_STILIZZATO": (
+            "Colore caldo e superficie poco riflettente, senza venature disegnate."
+        ),
+        "MATERIALE_NOME_VETRO": "Vetro",
+        "MATERIALE_DESCRIZIONE_VETRO": (
+            "Lascia passare la luce: la trasparenza si regola qui sotto."
+        ),
+        "MATERIALE_NOME_CERAMICA": "Ceramica",
+        "MATERIALE_DESCRIZIONE_CERAMICA": (
+            "Superficie liscia e lucida, come una piastrella smaltata."
+        ),
+        "MATERIALE_NOME_GOMMA": "Gomma",
+        "MATERIALE_DESCRIZIONE_GOMMA": (
+            "Superficie opaca e scura, che non riflette quasi nulla."
+        ),
+        "MATERIALE_NOME_VARIAZIONE_BASE": "Materiale",
+        "MATERIALE_NOME_VARIAZIONE": "Variazione di {nome}",
+        # Tavolozza dei colori: il nome scritto accanto al campione serve a chi
+        # distingue male i colori.
+        "COLORE_PANNA": "Panna",
+        "COLORE_GRIGIO": "Grigio",
+        "COLORE_MARRONE": "Marrone",
+        "COLORE_AZZURRO": "Azzurro",
+        "COLORE_BLU": "Blu",
+        "COLORE_VIOLA": "Viola",
+        "COLORE_VERDE": "Verde",
+        "COLORE_GIALLO": "Giallo",
+        "COLORE_ROSA": "Rosa",
+        "COLORE_ARANCIONE": "Arancione",
+        "COLORE_ROSSO": "Rosso",
+        "AIUTO_COLORE_TAVOLOZZA": "Colora il materiale di {nome}.",
+        "AZIONE_APPLICA_MATERIALE": "Applica il materiale",
+        "AIUTO_APPLICA_MATERIALE": (
+            "Dà il materiale scelto agli oggetti scelti, come esce dai valori qui sotto."
+        ),
+        "AZIONE_CREA_VARIAZIONE": "Crea variazione",
+        "AIUTO_CREA_VARIAZIONE": (
+            "Copia il materiale di questo oggetto: le modifiche restano solo qui."
+        ),
+        "ETICHETTA_MATERIALE_SCELTO": "Materiale scelto",
+        "AIUTO_MATERIALE_SCELTO": (
+            "Scegli un materiale pronto: colore e valori qui sotto si aggiornano da soli."
+        ),
+        "ETICHETTA_MATERIALE_APPLICATO": "Materiale applicato: {nome}",
+        "ETICHETTA_MATERIALE_NESSUNO": "Nessun materiale applicato all'oggetto scelto.",
+        "ETICHETTA_MATERIALE_CONDIVISO": (
+            "Questo materiale è usato da {numero} oggetti: crea una variazione per cambiarlo "
+            "senza toccare gli altri."
+        ),
+        "ANTEPRIMA_MATERIALE_ASSENTE": "Anteprima non disponibile: applica prima un materiale.",
+        "NOTA_VALORI_SI_APPLICANO": (
+            "I valori di colore e superficie si applicano con Applica il materiale."
+        ),
+        "NOTA_TRASPARENZA_NON_DISPONIBILE": (
+            "La trasparenza si regola solo sui materiali che la prevedono, come il vetro."
+        ),
+        "ETICHETTA_COLORE_MATERIALE": "Colore",
+        "AIUTO_COLORE_MATERIALE": "Colore di base del materiale: si applica con il pulsante qui sopra.",
+        "ETICHETTA_RUVIDITA": "Ruvidità",
+        "AIUTO_RUVIDITA": "Quanto ruvida è la superficie: 0 è uno specchio, 1 non riflette.",
+        "ETICHETTA_METALLICO": "Metallico",
+        "AIUTO_METALLICO": "Quanto la superficie si comporta come metallo.",
+        "ETICHETTA_TRASPARENZA_MATERIALE": "Trasparenza",
+        "AIUTO_TRASPARENZA_MATERIALE": "Quanta luce lascia passare il materiale: vale per il vetro.",
+        "MESSAGGIO_MATERIALE_APPLICATO_UNO": "Materiale applicato: {nome}.",
+        "MESSAGGIO_MATERIALE_APPLICATO_MOLTI": "Materiale applicato a {numero} oggetti: {nome}.",
+        "MESSAGGIO_VARIAZIONE_CREATA_UNO": "Variazione indipendente creata: {nome}.",
+        "MESSAGGIO_VARIAZIONE_CREATA_MOLTI": "Create {numero} variazioni indipendenti.",
+        "MESSAGGIO_COLORE_SCELTO": "Colore scelto: {nome}.",
+        "ERRORE_MATERIALE_NON_APPLICABILE": (
+            "Luci e telecamere non hanno una superficie da colorare: scegli una forma."
+        ),
+        "ERRORE_MATERIALE_ASSENTE": (
+            "Questo oggetto non ha ancora un materiale: applicalo con il pulsante qui sopra."
+        ),
+        "LOG_ERRORE_MATERIALE": "Applicazione del materiale non riuscita.",
+        # Illuminazione pronta.
+        "ILLUMINAZIONE_NOME_AUTOMATICA": "Illuminazione automatica",
+        "ILLUMINAZIONE_DESCRIZIONE_AUTOMATICA": (
+            "Tre luci morbide intorno alla scena, regolate sulla sua grandezza."
+        ),
+        "ILLUMINAZIONE_NOME_PRODOTTO": "Prodotto",
+        "ILLUMINAZIONE_DESCRIZIONE_PRODOTTO": (
+            "Luce principale, riempimento e contorno: fa risaltare un oggetto su sfondo neutro."
+        ),
+        "ILLUMINAZIONE_NOME_INTERNO_SEMPLICE": "Interno semplice",
+        "ILLUMINAZIONE_DESCRIZIONE_INTERNO_SEMPLICE": (
+            "Luce calda dal soffitto e luce fresca dalla finestra, come in una stanza."
+        ),
+        "ILLUMINAZIONE_NOME_ESTERNO_SEMPLICE": "Esterno semplice",
+        "ILLUMINAZIONE_DESCRIZIONE_ESTERNO_SEMPLICE": (
+            "Sole con ombre morbide e luce del cielo, per una scena all'aperto."
+        ),
+        "ILLUMINAZIONE_NOME_STUDIO_NEUTRO": "Studio neutro",
+        "ILLUMINAZIONE_DESCRIZIONE_STUDIO_NEUTRO": (
+            "Due luci laterali e una dall'alto: ombre leggere e colori fedeli."
+        ),
+        "NOME_LUCE_PRINCIPALE": "Luce principale",
+        "NOME_LUCE_RIEMPIMENTO": "Luce di riempimento",
+        "NOME_LUCE_CONTORNO": "Luce di contorno",
+        "NOME_LUCE_SOFFITTO": "Luce dal soffitto",
+        "NOME_LUCE_FINESTRA": "Luce dalla finestra",
+        "NOME_LUCE_SOLE": "Sole",
+        "NOME_LUCE_CIELO": "Luce del cielo",
+        "NOME_LUCE_SINISTRA": "Luce laterale sinistra",
+        "NOME_LUCE_DESTRA": "Luce laterale destra",
+        "NOME_LUCE_ALTO": "Luce dall'alto",
+        "NOME_RACCOLTA_ILLUMINAZIONE": "Illuminazione",
+        "AZIONE_ILLUMINAZIONE_AUTOMATICA": "Illuminazione automatica",
+        "AIUTO_ILLUMINAZIONE_AUTOMATICA": (
+            "Sistema luci e sfondo con valori prudenti, adattati alla grandezza della scena."
+        ),
+        "AIUTO_ILLUMINAZIONE_PRESET": (
+            "Crea le luci della situazione scelta e sostituisce quelle messe da FormaFacile."
+        ),
+        "ETICHETTA_ILLUMINAZIONE_ATTUALE": "Illuminazione applicata: {nome}, {numero} luci.",
+        "ETICHETTA_ILLUMINAZIONE_NESSUNA": (
+            "Nessuna illuminazione di FormaFacile: usa il primo pulsante per crearne una."
+        ),
+        "MESSAGGIO_ILLUMINAZIONE_APPLICATA": "Illuminazione applicata: {nome}, {numero} luci.",
+        "ERRORE_LUCI_NON_CREATE": "Non è stato possibile creare le luci.",
+        "AZIONE_APPLICA_AMBIENTE": "Applica sfondo e intensità",
+        "AIUTO_APPLICA_AMBIENTE": (
+            "Aggiorna il colore di sfondo e la potenza delle luci con i valori scritti qui."
+        ),
+        "ETICHETTA_SFONDO_COLORE": "Colore di sfondo",
+        "AIUTO_SFONDO_COLORE": "Colore dell'ambiente intorno alla scena.",
+        "ETICHETTA_SFONDO_INTENSITA": "Luminosità dello sfondo",
+        "AIUTO_SFONDO_INTENSITA": "Quanta luce arriva dallo sfondo.",
+        "ETICHETTA_LUCE_INTENSITA": "Potenza delle luci",
+        "AIUTO_LUCE_INTENSITA": "Moltiplica la potenza delle luci create da FormaFacile.",
+        "MESSAGGIO_AMBIENTE_APPLICATO": "Sfondo e potenza delle luci aggiornati.",
+        "ERRORE_SFONDO": "Non è stato possibile cambiare lo sfondo della scena.",
+        "LOG_ERRORE_ILLUMINAZIONE": "Applicazione dell'illuminazione non riuscita.",
+        # Telecamera e modi di guardare la scena.
+        "NOME_TELECAMERA": "Telecamera",
+        "AZIONE_AGGIUNGI_TELECAMERA": "Aggiungi telecamera",
+        "AIUTO_AGGIUNGI_TELECAMERA": (
+            "Crea una telecamera che inquadra la scena e la usa per l'immagine finale."
+        ),
+        "MESSAGGIO_TELECAMERA_AGGIUNTA": "Telecamera aggiunta e inquadrata: {nome}.",
+        "ERRORE_TELECAMERA_AGGIUNTA": "Non è stato possibile creare la telecamera.",
+        "AZIONE_INQUADRA_TELECAMERA": "Inquadra con la telecamera",
+        "AIUTO_INQUADRA_TELECAMERA": (
+            "La telecamera guarda gli oggetti scelti e si avvicina quanto basta."
+        ),
+        "MESSAGGIO_TELECAMERA_SCELTI": "Telecamera inquadrata sugli oggetti scelti.",
+        "MESSAGGIO_TELECAMERA_SCENA": "Telecamera inquadrata su tutta la scena.",
+        "AZIONE_CENTRA_VISTA": "Centra la vista",
+        "AIUTO_CENTRA_VISTA": (
+            "Porta al centro della vista gli oggetti scelti, senza cambiare lo zoom."
+        ),
+        "MESSAGGIO_VISTA_CENTRATA": "Vista centrata sugli oggetti scelti.",
+        "MESSAGGIO_VISTA_CENTRATA_SCENA": "Vista centrata su tutta la scena.",
+        "AZIONE_RIPRISTINA_TELECAMERA": "Ripristina la telecamera",
+        "AIUTO_RIPRISTINA_TELECAMERA": "Riporta la telecamera dove l'aveva messa FormaFacile.",
+        "MESSAGGIO_TELECAMERA_RIPRISTINATA": "Telecamera riportata alla posizione iniziale.",
+        "ERRORE_TELECAMERA_INIZIALE": (
+            "Questa telecamera non ha una posizione iniziale da ripristinare."
+        ),
+        "ETICHETTA_TELECAMERA_ATTUALE": "Telecamera principale: {nome}",
+        "ETICHETTA_TELECAMERA_NESSUNA": "Nessuna telecamera nella scena.",
+        "AZIONE_VISTA_LAVORO": "Vista di lavoro",
+        "AIUTO_VISTA_LAVORO": (
+            "Mostra la scena con colori semplici: è la vista veloce, quella per lavorare."
+        ),
+        "AZIONE_ANTEPRIMA_IMMAGINE": "Anteprima dell'immagine",
+        "AIUTO_ANTEPRIMA_IMMAGINE": (
+            "Mostra materiali, luci e ombre come nell'immagine finale: è più lenta."
+        ),
+        "ETICHETTA_MODO_VISTA_LAVORO": (
+            "Stai guardando la vista di lavoro: colori semplici e disegno veloce."
+        ),
+        "ETICHETTA_MODO_VISTA_ANTEPRIMA": (
+            "Stai guardando l'anteprima dell'immagine: si vedono materiali, luci e ombre."
+        ),
+        "MESSAGGIO_VISTA_LAVORO": "Vista di lavoro attiva: colori semplici e velocità massima.",
+        "MESSAGGIO_VISTA_ANTEPRIMA": (
+            "Anteprima dell'immagine attiva: la scena si vede come verrà nell'immagine finale."
+        ),
+        "LOG_ERRORE_TELECAMERA": "Comando della telecamera non riuscito.",
+        # Immagine finale.
+        "QUALITA_NOME_ANTEPRIMA": "Anteprima",
+        "QUALITA_DESCRIZIONE_ANTEPRIMA": (
+            "Veloce e leggera: serve a controllare inquadratura, luci e colori."
+        ),
+        "QUALITA_NOME_STANDARD": "Standard",
+        "QUALITA_DESCRIZIONE_STANDARD": (
+            "Buon compromesso fra tempo e qualità: è la scelta consigliata."
+        ),
+        "QUALITA_NOME_ALTA": "Alta qualità",
+        "QUALITA_DESCRIZIONE_ALTA": (
+            "Più campioni e disturbo ridotto: richiede più tempo e un po' più di memoria."
+        ),
+        "MOTORE_NOME_COME_IN_BLENDER": "Come in Blender",
+        "MOTORE_DESCRIZIONE_COME_IN_BLENDER": (
+            "Usa il motore già impostato nella scena, senza cambiarlo."
+        ),
+        "MOTORE_NOME_EEVEE": "EEVEE (veloce)",
+        "MOTORE_DESCRIZIONE_EEVEE": (
+            "Il motore veloce di Blender: ha bisogno di una scheda grafica aggiornata."
+        ),
+        "MOTORE_NOME_CYCLES": "Cycles (preciso)",
+        "MOTORE_DESCRIZIONE_CYCLES": "Il motore preciso di Blender: lavora anche col processore.",
+        "FORMATO_NOME_PNG": "PNG",
+        "FORMATO_DESCRIZIONE_PNG": (
+            "Immagine senza perdita di qualità: adatta a ritocchi e stampe."
+        ),
+        "FORMATO_NOME_JPEG": "JPEG",
+        "FORMATO_DESCRIZIONE_JPEG": "File più leggero, con una piccola perdita di qualità.",
+        "ETICHETTA_QUALITA": "Qualità",
+        "AIUTO_QUALITA": "Scegli quanto deve essere curata l'immagine finale.",
+        "ETICHETTA_QUALITA_RIASSUNTO": "{nome}: {larghezza} × {altezza} pixel, {campioni} campioni.",
+        "ETICHETTA_CARTELLA_IMMAGINE": "Cartella",
+        "AIUTO_CARTELLA_IMMAGINE": "Cartella in cui salvare l'immagine finale.",
+        "AZIONE_CREA_IMMAGINE_FINALE": "Crea immagine finale",
+        "AIUTO_CREA_IMMAGINE_FINALE": (
+            "Crea l'immagine con la qualità scelta e la salva nella cartella indicata."
+        ),
+        "ETICHETTA_RENDER_PERCENTUALE": "Risoluzione",
+        "AIUTO_RENDER_PERCENTUALE": (
+            "Percentuale della risoluzione della scena usata per l'immagine finale."
+        ),
+        "ETICHETTA_RENDER_CAMPIONI": "Campioni",
+        "AIUTO_RENDER_CAMPIONI": (
+            "Quanti passaggi di calcolo fare; zero usa il valore consigliato dalla qualità."
+        ),
+        "ETICHETTA_RENDER_MOTORE": "Motore",
+        "AIUTO_RENDER_MOTORE": "Programma di Blender che disegna l'immagine.",
+        "ETICHETTA_RENDER_FORMATO": "Formato",
+        "AIUTO_RENDER_FORMATO": "Tipo di file dell'immagine finale.",
+        "ETICHETTA_IMMAGINE_AVANZATA_NOTA": (
+            "Questi valori partono dalla qualità scelta e si possono correggere."
+        ),
+        "IMMAGINE_PREFISSO_FILE": "formafacile_immagine",
+        "MESSAGGIO_IMMAGINE_CREATA": "Immagine creata: {percorso}",
+        "MESSAGGIO_IMMAGINE_AVVIATA": (
+            "Creazione dell'immagine avviata: Blender mostra il progresso e si può "
+            "interrompere con Esc."
+        ),
+        "MESSAGGIO_IMMAGINE_IN_CORSO": (
+            "Creazione dell'immagine in corso: Blender scrive i campioni nella console finché "
+            "non ha finito."
+        ),
+        "MESSAGGIO_IMMAGINE_ANNULLATA": (
+            "Creazione dell'immagine interrotta: nessun file è stato salvato."
+        ),
+        "ERRORE_CARTELLA_MANCANTE": "Scegli la cartella in cui salvare l'immagine.",
+        "ERRORE_CARTELLA_INESISTENTE": "La cartella indicata non esiste: scegline una.",
+        "ERRORE_CARTELLA_NON_SCRIVIBILE": (
+            "Non posso scrivere nella cartella indicata: scegline un'altra."
+        ),
+        "ERRORE_TELECAMERA_MANCANTE": (
+            "Prima aggiungi una telecamera qui sopra: senza non si può creare l'immagine."
+        ),
+        "ERRORE_MEMORIA_INSUFFICIENTE": (
+            "La memoria libera non basta per un'immagine di questa grandezza: abbassa la "
+            "qualità o la risoluzione."
+        ),
+        "ERRORE_MEMORIA_DURANTE_IL_LAVORO": (
+            "La creazione dell'immagine ha esaurito la memoria: chiudi altri programmi o "
+            "abbassa la qualità."
+        ),
+        "ERRORE_SPAZIO_INSUFFICIENTE": (
+            "Lo spazio libero su disco è troppo poco per salvare l'immagine."
+        ),
+        "ERRORE_PIXEL_TROPPI": (
+            "La risoluzione richiesta è troppo grande: abbassa la percentuale di risoluzione."
+        ),
+        "ERRORE_MOTORE_ASSENTE": (
+            "Questo motore di Blender non è disponibile: scegli Come in Blender o Cycles."
+        ),
+        "ERRORE_RENDER_FALLITO": (
+            "Non è stato possibile creare l'immagine: Blender ha segnalato un errore."
+        ),
+        "ERRORE_IMMAGINE_NON_LEGGIBILE": (
+            "L'immagine è stata creata ma non si apre: controlla lo spazio su disco."
+        ),
+        "ERRORE_IMMAGINE_NON_SCRITTA": "Blender non ha scritto il file: controlla la cartella.",
+        "ERRORE_IMMAGINE_IN_MODIFICA": (
+            "Prima torna alla modalità Oggetto con Tab: così l'immagine è quella che vedi."
+        ),
+        "LOG_ERRORE_IMMAGINE": "Creazione dell'immagine non riuscita.",
         # Strumenti guidati di modellazione (pannello "Dai forma").
         "AZIONE_AMMORBIDISCI_SPIGOLI": "Arrotonda gli spigoli",
         "AIUTO_AMMORBIDISCI_SPIGOLI": (

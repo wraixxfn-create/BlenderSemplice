@@ -84,6 +84,24 @@ ID_LUCE_MENO = "formafacile.luce_meno"
 ID_GUARDA_DA_CAMERA = "formafacile.guarda_da_camera"
 ID_TELECAMERA_PRINCIPALE = "formafacile.telecamera_principale"
 
+# Aspetto della scena: materiali, illuminazione, telecamera e immagine finale.
+ID_APPLICA_MATERIALE = "formafacile.applica_materiale"
+ID_CREA_VARIAZIONE = "formafacile.crea_variazione"
+ID_SCEGLI_COLORE = "formafacile.scegli_colore"
+ID_ILLUMINAZIONE_AUTOMATICA = "formafacile.illuminazione_automatica"
+ID_ILLUMINAZIONE_PRESET = "formafacile.illuminazione_preset"
+ID_APPLICA_AMBIENTE = "formafacile.applica_ambiente"
+ID_AGGIUNGI_TELECAMERA = "formafacile.aggiungi_telecamera"
+ID_INQUADRA_TELECAMERA = "formafacile.inquadra_telecamera"
+ID_CENTRA_VISTA = "formafacile.centra_vista"
+ID_RIPRISTINA_TELECAMERA = "formafacile.ripristina_telecamera"
+ID_VISTA_LAVORO = "formafacile.vista_lavoro"
+ID_ANTEPRIMA_RENDER = "formafacile.anteprima_render"
+ID_CREA_IMMAGINE_FINALE = "formafacile.crea_immagine_finale"
+
+# Comandi nativi richiamati dagli operatori dell'aspetto.
+ID_NATIVO_CENTRA_VISTA = "view3d.view_center_cursor"
+
 # Storia e vista.
 ID_ANNULLA = "formafacile.annulla"
 ID_RIPETI = "formafacile.ripeti"
@@ -266,6 +284,41 @@ ID_STRUMENTI_GUIDATI = (
 
 # Comandi della guida, nell'ordine in cui compaiono nel pannello.
 ID_GUIDA = (ID_GUIDA_APRI, ID_GUIDA_ESEGUI, ID_GUIDA_NAVIGA)
+
+# Comandi che danno un bell'aspetto alla scena, nell'ordine del pannello.
+# Servono ai controlli automatici: ogni promessa del pannello deve avere un
+# comando vero dietro.
+ID_ASPETTO = (
+    ID_APPLICA_MATERIALE,
+    ID_CREA_VARIAZIONE,
+    ID_ILLUMINAZIONE_AUTOMATICA,
+    ID_ILLUMINAZIONE_PRESET,
+    ID_APPLICA_AMBIENTE,
+    ID_AGGIUNGI_TELECAMERA,
+    ID_INQUADRA_TELECAMERA,
+    ID_CENTRA_VISTA,
+    ID_RIPRISTINA_TELECAMERA,
+    ID_VISTA_LAVORO,
+    ID_ANTEPRIMA_RENDER,
+    ID_CREA_IMMAGINE_FINALE,
+)
+
+# Comandi delle luci e della telecamera, con l'icona mostrata sul pulsante.
+# Le icone sono nomi ufficiali di Blender 4.5 LTS.
+ICONE_ASPETTO = {
+    ID_APPLICA_MATERIALE: "MATERIAL",
+    ID_CREA_VARIAZIONE: "DUPLICATE",
+    ID_ILLUMINAZIONE_AUTOMATICA: "LIGHT",
+    ID_ILLUMINAZIONE_PRESET: "LIGHT_AREA",
+    ID_APPLICA_AMBIENTE: "WORLD",
+    ID_AGGIUNGI_TELECAMERA: "CAMERA_DATA",
+    ID_INQUADRA_TELECAMERA: "ZOOM_SELECTED",
+    ID_CENTRA_VISTA: "PIVOT_BOUNDBOX",
+    ID_RIPRISTINA_TELECAMERA: "HOME",
+    ID_VISTA_LAVORO: "SHADING_SOLID",
+    ID_ANTEPRIMA_RENDER: "SHADING_RENDERED",
+    ID_CREA_IMMAGINE_FINALE: "RENDER_STILL",
+}
 
 # Comandi dei gruppi e delle modifiche non applicate, nell'ordine del pannello.
 ID_GRUPPI = (

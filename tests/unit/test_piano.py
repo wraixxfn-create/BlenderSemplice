@@ -97,7 +97,7 @@ STRUMENTI_SENZA_ELENCHI = tuple(
 )
 
 # Chiavi dei pannelli nell'ordine in cui compaiono, secondo la modalità.
-PANNELLI_SEMPLICE = ("principale", "scena", "libreria", "oggetto", "modella")
+PANNELLI_SEMPLICE = ("principale", "scena", "libreria", "oggetto", "modella", "aspetto")
 PANNELLI = (*PANNELLI_SEMPLICE, "completo")
 
 
@@ -177,7 +177,7 @@ class TestStrutturaDelPiano(unittest.TestCase):
             modalita=configuration.MODALITA_COMPLETA,
         )
         usati = set()
-        for chiave in ("principale", "scena", "libreria", "oggetto", "completo"):
+        for chiave in ("principale", "scena", "libreria", "oggetto", "modella", "aspetto", "completo"):
             usati.update(identificatori(contesto_ui, chiave))
         estranei = {nome for nome in usati if nome.startswith("formafacile.")} - dichiarati
         self.assertEqual(estranei, set())

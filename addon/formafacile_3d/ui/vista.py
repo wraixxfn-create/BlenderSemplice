@@ -8,13 +8,18 @@ quindi non può mostrare dati vecchi.
 from __future__ import annotations
 
 from .. import configuration
+from ..blender import illuminazione as servizio_illuminazione
+from ..blender import materiali as servizio_materiali
 from ..blender import modificatori as servizio_modificatori
 from ..blender import raccolte as servizio_raccolte
 from ..blender import selezione
+from ..blender import telecamera as servizio_telecamera
 from ..blender import vista as servizio_vista
-from ..scene import libreria, misure
+from ..scene import aspetto, libreria, misure
 from ..scene.stato import (
     grandezza_della_scena,
+    immagine_della_scena,
+    materiale_della_scena,
     stato_della_scena,
     guida_della_scena,
     messaggio_della_scena,
@@ -51,6 +56,7 @@ def raccogli_contesto(context) -> tuple[Contesto, dict[str, object]]:
 
     messaggio, recente = messaggio_della_scena(scena)
     guida, passo_guida = guida_della_scena(scena)
+    larghezza, altezza, campioni = _dimensioni_immagine(scena)
     contesto = Contesto(
         modalita=modalita,
         in_modalita_oggetto=getattr(context, "mode", "OBJECT") == "OBJECT",
@@ -77,8 +83,65 @@ def raccogli_contesto(context) -> tuple[Contesto, dict[str, object]]:
         modificatori=_modificatori(context, vettore),
         guida=guida,
         passo_guida=passo_guida,
+        qualita=immagine_della_scena(scena)[0],
+        materiale=materiale_della_scena(scena),
+        materiale_applicato=_materiale_applicato(scena, vettore),
+        materiale_condiviso=_materiale_condiviso(scena, vettore),
+        illuminazione=_illuminazione(context),
+        illuminazione_luci=_luci(context),
+        telecamera=_telecamera(scena),
+        anteprima_immagine=servizio_telecamera.in_anteprima(context),
+        immagine_larghezza=larghezza,
+        immagine_altezza=altezza,
+        immagine_campioni=campioni,
     )
+    risolutore[configuration.CHIAVE_MATERIALE] = _risolutore_materiale(scena, vettore)
     return contesto, risolutore
+
+
+def _risolutore_materiale(scena, vettore):
+    """Materiale dell'oggetto attivo, usato per l'anteprima disegnata da Blender."""
+    attivo = getattr(getattr(vettore, "objects", None), "active", None)
+    if attivo is None:
+        return None
+    return servizio_materiali.materiale_principale(attivo)
+
+
+def _materiale_applicato(scena, vettore) -> str:
+    """Nome del materiale dell'oggetto attivo: è quello che l'utente vede."""
+    materiale = _risolutore_materiale(scena, vettore)
+    if materiale is None:
+        return ""
+    return str(getattr(materiale, "name", ""))
+
+
+def _materiale_condiviso(scena, vettore) -> int:
+    """Quanti oggetti usano il materiale dell'oggetto attivo."""
+    materiale = _risolutore_materiale(scena, vettore)
+    if materiale is None:
+        return 0
+    return servizio_materiali.quanti_oggetti_usano(scena, materiale)
+
+
+def _illuminazione(context) -> str:
+    """Chiave dell'illuminazione di FormaFacile presente adesso nella scena."""
+    chiave, _quante = servizio_illuminazione.descrizione_attuale(
+        getattr(context, "scene", None)
+    )
+    return chiave
+
+
+def _luci(context) -> int:
+    """Numero di luci create da FormaFacile."""
+    return len(servizio_illuminazione.luci_formafacile(getattr(context, "scene", None)))
+
+
+def _telecamera(scena) -> str:
+    """Nome della telecamera principale, se c'è."""
+    camera = getattr(scena, "camera", None)
+    if camera is None:
+        return ""
+    return str(getattr(camera, "name", ""))
 
 
 def _raccolte(scena) -> tuple[Raccolta, ...]:
@@ -208,3 +271,22 @@ def _fotografa_oggetto(oggetto, scena, attivo) -> Oggetto:
         potenza_luce=potenza,
         telecamera_principale=bool(scena is not None and getattr(scena, "camera", None) is oggetto),
     )
+
+
+def _dimensioni_immagine(scena) -> tuple[int, int, int]:
+    """Grandezza in pixel e campioni dell'immagine finale.
+
+    Sono i numeri che il pannello scrive accanto alla qualità scelta: prima di
+    creare l'immagine l'utente sa quanto sarà grande e quanto lavoro chiederà.
+    """
+    render = getattr(scena, "render", None)
+    if render is None:
+        return 0, 0, 0
+    _qualita, percentuale, campioni, motore, _formato = immagine_della_scena(scena)
+    percentuale = max(int(percentuale), 1)
+    larghezza = int(getattr(render, "resolution_x", 0) or 0) * percentuale // 100
+    altezza = int(getattr(render, "resolution_y", 0) or 0) * percentuale // 100
+    motore_blender = str(getattr(render, "engine", ""))
+    if campioni <= configuration.CAMPIONI_AUTOMATICI:
+        campioni = aspetto.qualita(_qualita).campioni(motore_blender)
+    return larghezza, altezza, campioni

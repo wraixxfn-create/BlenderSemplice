@@ -18,8 +18,10 @@ from __future__ import annotations
 
 import contextlib
 import math
+import os
 import re
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -35,11 +37,16 @@ import supporto_finto  # noqa: E402
 from formafacile_3d import comandi, configuration  # noqa: E402
 from formafacile_3d.blender import allineamento  # noqa: E402
 from formafacile_3d.blender import asset_library as servizio_libreria  # noqa: E402
+from formafacile_3d.blender import illuminazione as servizio_illuminazione  # noqa: E402
+from formafacile_3d.blender import materiali as servizio_materiali  # noqa: E402
 from formafacile_3d.blender import modificatori  # noqa: E402
 from formafacile_3d.blender import oggetti as servizio_oggetti  # noqa: E402
 from formafacile_3d.blender import raccolte  # noqa: E402
-from formafacile_3d.blender import selezione, vista as servizio_vista  # noqa: E402
+from formafacile_3d.blender import rendering as servizio_rendering  # noqa: E402
+from formafacile_3d.blender import selezione, telecamera as servizio_telecamera  # noqa: E402
+from formafacile_3d.blender import vista as servizio_vista  # noqa: E402
 from formafacile_3d.localization import TESTI  # noqa: E402
+from formafacile_3d.scene import aspetto  # noqa: E402
 from formafacile_3d.scene import guide, libreria, messaggi, nomi, primitives, stato  # noqa: E402
 from formafacile_3d.ui import icone, panel, piano as piano_ui, renderer, vista as vista_ui  # noqa: E402
 
@@ -71,6 +78,9 @@ SENZA_UNDO = frozenset(
         comandi.ID_STRUMENTO_SPOSTA,
         comandi.ID_STRUMENTO_RUOTA,
         comandi.ID_STRUMENTO_SCALA,
+        comandi.ID_CENTRA_VISTA,
+        comandi.ID_VISTA_LAVORO,
+        comandi.ID_ANTEPRIMA_RENDER,
     }
 )
 
@@ -84,6 +94,7 @@ FUNZIONI_DI_DISEGNO = {
     "etichetta": "label",
     "comando": "operator",
     "campo": "prop",
+    "anteprima": "template_preview",
 }
 
 
@@ -265,7 +276,7 @@ def prova_registrazione() -> None:
 
     pannelli = classi_registrate(bpy.types.Panel)
     testate = classi_registrate(bpy.types.Header)
-    verifica(len(pannelli) == 6, f"pannelli registrati: {len(pannelli)}")
+    verifica(len(pannelli) == 7, f"pannelli registrati: {len(pannelli)}")
     verifica(len(testate) == 1, "la testata con il pulsante FormaFacile è registrata")
     for classe in (*pannelli, *testate):
         verifica(classe.bl_space_type == "VIEW_3D", f"{classe.__name__} vive nella Vista 3D")
@@ -1676,6 +1687,7 @@ def prova_pannelli() -> None:
         ("libreria", panel.FORMAFACILE_PT_libreria),
         ("oggetto", panel.FORMAFACILE_PT_oggetto),
         ("modella", panel.FORMAFACILE_PT_modella),
+        ("aspetto", panel.FORMAFACILE_PT_aspetto),
     ):
         registro = disegna_pannello(classe)
         verifica(bool(registro), f"il pannello {chiave} disegna contenuti")
@@ -1688,6 +1700,7 @@ def prova_pannelli() -> None:
         (panel.FORMAFACILE_PT_libreria, "TITOLO_PANNELLO_LIBRERIA"),
         (panel.FORMAFACILE_PT_oggetto, "TITOLO_PANNELLO_OGGETTO"),
         (panel.FORMAFACILE_PT_modella, "TITOLO_PANNELLO_MODELLA"),
+        (panel.FORMAFACILE_PT_aspetto, "TITOLO_PANNELLO_ASPETTO"),
         (panel.FORMAFACILE_PT_completo, "TITOLO_PANNELLO_COMPLETO"),
     ):
         verifica(
@@ -2768,6 +2781,1060 @@ def prova_guida() -> None:
         f"la spiegazione dice che non è disponibile: {messaggio()}",
     )
 
+# ------------------------------------------------------- aspetto: materiali
+
+
+def aspetto_scena():
+    """Stato dell'aspetto salvato nella scena corrente."""
+    return bpy.context.scene.formafacile
+
+
+def imposta_materiale(chiave: str, **valori) -> None:
+    """Scrive nello stato il materiale scelto e i valori da applicare."""
+    aspetto_scena().materiale_scelto = chiave
+    for nome, valore in valori.items():
+        setattr(aspetto_scena(), f"materiale_{nome}", valore)
+
+
+def valore_ingresso(materiale, nome: str):
+    """Valore di un ingresso del nodo principale di un materiale, se esiste."""
+    nodo = servizio_materiali.nodo_principale(materiale)
+    if nodo is None:
+        return None
+    ingresso = nodo.inputs.get(nome)
+    return None if ingresso is None else ingresso.default_value
+
+
+def prova_materiali() -> None:
+    """I materiali pronti sono materiali veri, indipendenti e corretti."""
+    azzera_scena()
+    esegui(comandi.ID_AGGIUNGI_CUBO)
+    cubo = bpy.data.objects[TESTI["NOME_CUBO"]]
+    esegui(comandi.ID_SCEGLI_OGGETTO, oggetto=cubo.name, modo="sostituisci")
+
+    # Ogni materiale pronto compare nell'elenco con nome e descrizione italiane.
+    for chiave in aspetto.ORDINE_MATERIALI:
+        valori = aspetto.MATERIALI[chiave]
+        verifica(bool(valori.nome) and bool(valori.descrizione), f"materiale descritto: {chiave}")
+        verifica(
+            0.0 <= valori.ruvidita <= 1.0 and 0.0 <= valori.metallico <= 1.0,
+            f"i valori di {chiave} stanno nei limiti di Blender",
+        )
+        verifica(
+            valori.trasparenza_disponibile or valori.trasparenza == 0.0,
+            f"{chiave}: la trasparenza c'è solo dove ha senso",
+        )
+
+    # Applicare un materiale pronto crea un materiale vero con i valori giusti.
+    imposta_materiale(aspetto.MATERIALE_CERAMICA)
+    verifica(
+        esegui(comandi.ID_APPLICA_MATERIALE) == {"FINISHED"},
+        f"il materiale si applica: {messaggio()}",
+    )
+    materiale = servizio_materiali.materiale_principale(cubo)
+    verifica(materiale is not None, "l'oggetto ha un materiale dopo l'applicazione")
+    verifica(
+        materiale.name.startswith(aspetto.MATERIALI[aspetto.MATERIALE_CERAMICA].nome),
+        f"il materiale si chiama come il materiale pronto: {materiale.name}",
+    )
+    verifica(
+        servizio_materiali.ricetta(materiale) == aspetto.MATERIALE_CERAMICA,
+        "il materiale ricorda da quale ricetta nasce",
+    )
+    for nome, atteso in (
+        ("Roughness", aspetto.MATERIALI[aspetto.MATERIALE_CERAMICA].ruvidita),
+        ("Metallic", 0.0),
+        ("Transmission Weight", 0.0),
+    ):
+        letto = valore_ingresso(materiale, nome)
+        verifica(
+            letto is not None and abs(float(letto) - atteso) < 1e-6,
+            f"{nome} vale {atteso} come nella ricetta: {letto}",
+        )
+    colore = valore_ingresso(materiale, "Base Color")
+    atteso = aspetto.MATERIALI[aspetto.MATERIALE_CERAMICA].colore
+    verifica(
+        colore is not None and max(abs(float(colore[i]) - atteso[i]) for i in range(3)) < 1e-6,
+        f"il colore del materiale è quello della ricetta: {tuple(colore)[:3]}",
+    )
+    verifica(
+        tuple(round(float(valore), 4) for valore in materiale.diffuse_color[:3])
+        == tuple(round(float(valore), 4) for valore in atteso),
+        "anche il campione del materiale ha il colore giusto",
+    )
+
+    # Cambiare colore e riapplicare aggiorna lo stesso materiale: niente doppioni.
+    quanti_prima = len(bpy.data.materials)
+    esegui(comandi.ID_SCEGLI_COLORE, colore="rosso")
+    verifica(
+        tuple(round(float(valore), 4) for valore in aspetto_scena().materiale_colore)
+        == tuple(round(float(valore), 4) for valore in aspetto.TAVOLOZZA["rosso"].rgb),
+        "il pulsante della tavolozza scrive il colore scelto",
+    )
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_COLORE_SCELTO"].format(nome=TESTI["COLORE_ROSSO"]),
+        f"il messaggio dice quale colore è stato scelto: {messaggio()}",
+    )
+    verifica(esegui(comandi.ID_APPLICA_MATERIALE) == {"FINISHED"}, "riapplicare il materiale")
+    verifica(
+        len(bpy.data.materials) == quanti_prima,
+        "riapplicare non crea materiali doppioni sullo stesso oggetto",
+    )
+    verifica(
+        servizio_materiali.materiale_principale(cubo) is materiale,
+        "il materiale dell'oggetto è sempre lo stesso dato",
+    )
+    nuovo_colore = valore_ingresso(materiale, "Base Color")
+    verifica(
+        max(abs(float(nuovo_colore[i]) - aspetto.TAVOLOZZA["rosso"].rgb[i]) for i in range(3)) < 1e-6,
+        "il colore nuovo è arrivato davvero sul materiale",
+    )
+
+    # Due oggetti diversi ricevono materiali indipendenti: niente sorprese.
+    esegui(comandi.ID_AGGIUNGI_SFERA)
+    sfera = bpy.data.objects[TESTI["NOME_SFERA"]]
+    esegui(comandi.ID_SCEGLI_OGGETTO, oggetto=sfera.name, modo="sostituisci")
+    esegui(comandi.ID_APPLICA_MATERIALE)
+    materiale_sfera = servizio_materiali.materiale_principale(sfera)
+    verifica(
+        materiale_sfera is not materiale,
+        "ogni oggetto riceve un materiale suo: cambiarlo non tocca gli altri",
+    )
+    esegui(comandi.ID_SCEGLI_OGGETTO, oggetto=cubo.name, modo="sostituisci")
+    esegui(comandi.ID_APPLICA_MATERIALE)
+    verifica(
+        servizio_materiali.materiale_principale(sfera) is materiale_sfera,
+        "riapplicare su un oggetto non cambia il materiale di un altro",
+    )
+    verifica(bool(messaggio()), "anche l'applicazione del materiale lascia un messaggio")
+
+    # Il vetro è trasparente davvero: trasmissione, indice di rifrazione e fusione.
+    esegui(comandi.ID_AGGIUNGI_CILINDRO)
+    cilindro = bpy.data.objects[TESTI["NOME_CILINDRO"]]
+    esegui(comandi.ID_SCEGLI_OGGETTO, oggetto=cilindro.name, modo="sostituisci")
+    imposta_materiale(aspetto.MATERIALE_VETRO)
+    esegui(comandi.ID_APPLICA_MATERIALE)
+    vetro = servizio_materiali.materiale_principale(cilindro)
+    verifica(
+        abs(float(valore_ingresso(vetro, "Transmission Weight")) - 1.0) < 1e-6,
+        "il vetro lascia passare la luce: trasmissione al massimo",
+    )
+    verifica(
+        abs(
+            float(valore_ingresso(vetro, "IOR"))
+            - aspetto.MATERIALI[aspetto.MATERIALE_VETRO].indice_rifrazione
+        )
+        < 1e-4,
+        "il vetro ha il suo indice di rifrazione",
+    )
+    if hasattr(vetro, "blend_method"):
+        verifica(
+            str(vetro.blend_method) in {"BLEND", "HASHED"},
+            f"il vetro è configurato per la fusione: {vetro.blend_method}",
+        )
+    if hasattr(vetro, "surface_render_method"):
+        verifica(
+            str(vetro.surface_render_method) in {"BLENDED", "DITHERED"},
+            f"il metodo di disegno del vetro è valido: {vetro.surface_render_method}",
+        )
+
+    # La trasparenza si regola solo dove ha senso: su un materiale opaco resta
+    # a zero anche se il campo è stato lasciato alto dal vetro di prima.
+    esegui(comandi.ID_SCEGLI_OGGETTO, oggetto=cubo.name, modo="sostituisci")
+    imposta_materiale(aspetto.MATERIALE_CERAMICA, trasparenza=0.8)
+    valori = stato.valori_materiale_della_scena(bpy.context.scene)
+    verifica(
+        valori.trasparenza == 0.0,
+        f"su un materiale opaco la trasparenza resta a zero: {valori.trasparenza}",
+    )
+    esegui(comandi.ID_APPLICA_MATERIALE)
+    verifica(
+        abs(
+            float(
+                valore_ingresso(
+                    servizio_materiali.materiale_principale(cubo), "Transmission Weight"
+                )
+            )
+        )
+        < 1e-6,
+        "il materiale opaco applicato non lascia passare la luce",
+    )
+    imposta_materiale(aspetto.MATERIALE_VETRO, trasparenza=0.5)
+    esegui(comandi.ID_APPLICA_MATERIALE)
+    vetro_parziale = servizio_materiali.materiale_principale(cubo)
+    verifica(
+        abs(float(valore_ingresso(vetro_parziale, "Transmission Weight")) - 0.5) < 1e-6,
+        "la trasparenza scritta dall'utente arriva sul vetro",
+    )
+
+    # Variazione: il materiale condiviso si copia prima di cambiarlo.
+    esegui(comandi.ID_AGGIUNGI_CONO)
+    cono = bpy.data.objects[TESTI["NOME_CONO"]]
+    esegui(comandi.ID_SCEGLI_OGGETTO, oggetto=cilindro.name, modo="sostituisci")
+    esegui(comandi.ID_SCEGLI_OGGETTO, oggetto=cono.name, modo="aggiungi")
+    imposta_materiale(aspetto.MATERIALE_METALLO)
+    esegui(comandi.ID_APPLICA_MATERIALE)
+    esegui(comandi.ID_SCEGLI_OGGETTO, oggetto=cono.name, modo="sostituisci")
+    esegui(comandi.ID_APPLICA_MATERIALE)
+    condiviso = servizio_materiali.materiale_principale(cilindro)
+    verifica(
+        servizio_materiali.materiale_principale(cono) is not condiviso,
+        "due applicazioni danno due materiali indipendenti",
+    )
+    # Si torna a un materiale davvero condiviso, come capita aprendo un file
+    # fatto con Blender: due oggetti con lo stesso materiale.
+    servizio_materiali.assegna(cono, condiviso)
+    verifica(
+        servizio_materiali.quanti_oggetti_usano(bpy.context.scene, condiviso) == 2,
+        "il materiale è condiviso da due oggetti",
+    )
+    contesto_ui, _risolutore = contesto_interfaccia()
+    verifica(
+        contesto_ui.materiale_condiviso == 2,
+        f"il pannello si accorge che il materiale è condiviso: {contesto_ui.materiale_condiviso}",
+    )
+    registro = disegna_pannello(panel.FORMAFACILE_PT_aspetto)
+    controlla_registro(registro, "aspetto (materiale condiviso)")
+    verifica(
+        any(
+            TESTI["ETICHETTA_MATERIALE_CONDIVISO"].format(numero=2).startswith(riga[:20])
+            for riga in supporto_finto.etichette(registro)
+        ),
+        "il pannello avvisa che il materiale è condiviso e propone la variazione",
+    )
+    esegui(comandi.ID_SCEGLI_OGGETTO, oggetto=cono.name, modo="sostituisci")
+    materiale_condiviso = servizio_materiali.materiale_principale(cilindro)
+    verifica(
+        esegui(comandi.ID_CREA_VARIAZIONE) == {"FINISHED"},
+        f"la variazione si crea: {messaggio()}",
+    )
+    variazione = servizio_materiali.materiale_principale(cono)
+    verifica(
+        variazione is not materiale_condiviso,
+        "la variazione è un materiale nuovo, non quello di partenza",
+    )
+    verifica(
+        variazione.name.startswith(
+            TESTI["MATERIALE_NOME_VARIAZIONE"].format(nome="").strip()
+        ),
+        f"il nome della variazione ricorda il materiale di partenza: {variazione.name}",
+    )
+    verifica(
+        servizio_materiali.materiale_principale(cilindro) is materiale_condiviso,
+        "il materiale di partenza resta all'altro oggetto",
+    )
+    verifica(
+        servizio_materiali.quanti_oggetti_usano(bpy.context.scene, variazione) == 1,
+        "la variazione è usata da un oggetto solo",
+    )
+    # Cambiare la variazione non tocca il materiale di partenza.
+    servizio_materiali.imposta_valori(variazione, (1.0, 0.0, 0.0), 0.5, 0.0, 0.0)
+    colore_originale = valore_ingresso(materiale_condiviso, "Base Color")
+    verifica(
+        max(
+            abs(
+                float(colore_originale[i])
+                - aspetto.MATERIALI[aspetto.MATERIALE_METALLO].colore[i]
+            )
+            for i in range(3)
+        )
+        < 1e-6,
+        "cambiare la variazione non cambia il materiale condiviso",
+    )
+
+    # Senza scelta, e su oggetti che non hanno superfici, il comando lo dice.
+    esegui(comandi.ID_DESCEGLI_TUTTO)
+    esito = esegui(comandi.ID_APPLICA_MATERIALE)
+    verifica("CANCELLED" in esito, "senza scelta il materiale non si applica")
+    verifica(
+        messaggio() == TESTI["ERRORE_NESSUNA_SCELTA"],
+        f"il messaggio spiega che serve una scelta: {messaggio()}",
+    )
+    esegui(comandi.ID_AGGIUNGI_LUCE)
+    esegui(comandi.ID_SCEGLI_TUTTO)
+    for oggetto in bpy.context.view_layer.objects:
+        oggetto.select_set(oggetto.type == "LIGHT")
+    bpy.context.view_layer.objects.active = next(
+        oggetto for oggetto in bpy.context.view_layer.objects if oggetto.type == "LIGHT"
+    )
+    esito = esegui(comandi.ID_APPLICA_MATERIALE)
+    verifica("CANCELLED" in esito, "una luce non può ricevere un materiale")
+    verifica(
+        messaggio() == TESTI["ERRORE_MATERIALE_NON_APPLICABILE"],
+        f"il messaggio spiega perché: {messaggio()}",
+    )
+    esito = esegui(comandi.ID_CREA_VARIAZIONE)
+    verifica("CANCELLED" in esito, "senza materiale non si crea nessuna variazione")
+
+# ---------------------------------------------------- aspetto: illuminazione
+
+
+def luci_formafacile() -> list:
+    """Luci create da FormaFacile nella scena corrente."""
+    return servizio_illuminazione.luci_formafacile(bpy.context.scene)
+
+
+def nodo_sfondo(scena):
+    """Nodo dello sfondo della scena: è il dato che FormaFacile regola."""
+    mondo = getattr(scena, "world", None)
+    albero = getattr(mondo, "node_tree", None)
+    if albero is None:
+        return None
+    return next(
+        (nodo for nodo in albero.nodes if nodo.bl_idname == "ShaderNodeBackground"), None
+    )
+
+
+def prova_illuminazione() -> None:
+    """Le illuminazioni pronte creano luci vere, sostituibili e regolabili."""
+    azzera_scena()
+    esegui(comandi.ID_AGGIUNGI_CUBO)
+
+    # Illuminazione automatica: un'azione sola, che regola anche lo sfondo.
+    preset = aspetto.ILLUMINAZIONI[aspetto.ILLUMINAZIONE_AUTOMATICA]
+    verifica(
+        esegui(comandi.ID_ILLUMINAZIONE_AUTOMATICA) == {"FINISHED"},
+        f"l'illuminazione automatica funziona: {messaggio()}",
+    )
+    luci = luci_formafacile()
+    verifica(
+        len(luci) == len(preset.luci),
+        f"l'illuminazione automatica crea {len(preset.luci)} luci: {len(luci)}",
+    )
+    verifica(
+        all(oggetto.type == "LIGHT" and oggetto.data.energy > 0.0 for oggetto in luci),
+        "le luci hanno una potenza positiva",
+    )
+    verifica(
+        aspetto_scena().illuminazione == preset.chiave,
+        f"lo stato ricorda l'illuminazione applicata: {aspetto_scena().illuminazione}",
+    )
+    verifica(
+        messaggio()
+        == TESTI["MESSAGGIO_ILLUMINAZIONE_APPLICATA"].format(nome=preset.nome, numero=len(luci)),
+        f"il messaggio dice che cosa è stato applicato: {messaggio()}",
+    )
+    raccolta = bpy.data.collections.get(TESTI["NOME_RACCOLTA_ILLUMINAZIONE"])
+    verifica(raccolta is not None, "le luci stanno in una raccolta dedicata")
+    verifica(
+        all(oggetto.name in raccolta.objects for oggetto in luci),
+        "tutte le luci create sono nella raccolta",
+    )
+    nodo = nodo_sfondo(bpy.context.scene)
+    verifica(nodo is not None, "lo sfondo ha il nodo che FormaFacile regola")
+    verifica(
+        abs(float(nodo.inputs["Strength"].default_value) - preset.sfondo_intensita) < 1e-6,
+        f"la luminosità dello sfondo è quella del preset: {nodo.inputs['Strength'].default_value}",
+    )
+    verifica(
+        max(
+            abs(float(nodo.inputs["Color"].default_value[i]) - preset.sfondo[i]) for i in range(3)
+        )
+        < 1e-6,
+        "il colore dello sfondo è quello del preset",
+    )
+
+    # Le luci guardano la scena, non il vuoto: la loro direzione arriva al centro.
+    centro = servizio_illuminazione.centro_scena(bpy.context)
+    for oggetto in luci:
+        direzione = oggetto.matrix_world.to_quaternion() @ mathutils.Vector((0.0, 0.0, -1.0))
+        verso = (centro - mathutils.Vector(oggetto.location)).normalized()
+        verifica(
+            direzione.dot(verso) > 0.9,
+            f"la luce {oggetto.name} punta verso il centro della scena",
+        )
+
+    # Una nuova illuminazione sostituisce la precedente.
+    esterno = aspetto.ILLUMINAZIONI[aspetto.ILLUMINAZIONE_ESTERNO_SEMPLICE]
+    verifica(
+        esegui(comandi.ID_ILLUMINAZIONE_PRESET, preset=esterno.chiave) == {"FINISHED"},
+        f"si applica anche un'illuminazione tipica: {messaggio()}",
+    )
+    luci_esterne = luci_formafacile()
+    verifica(
+        len(luci_esterne) == len(esterno.luci),
+        f"le luci di prima sono state sostituite: {len(luci_esterne)}",
+    )
+    verifica(
+        any(oggetto.data.type == "SUN" for oggetto in luci_esterne),
+        "l'illuminazione esterna mette un sole",
+    )
+    sole = next((oggetto for oggetto in luci_esterne if oggetto.data.type == "SUN"), None)
+    if sole is not None and hasattr(sole.data, "angle"):
+        verifica(float(sole.data.angle) > 0.0, f"il sole ha ombre morbide: {sole.data.angle}")
+
+    # Le luci dell'utente non vengono toccate.
+    esegui(comandi.ID_AGGIUNGI_LUCE)
+    mie = [oggetto for oggetto in bpy.context.scene.objects if oggetto.type == "LIGHT"]
+    nome_utente = next(oggetto.name for oggetto in mie if oggetto not in luci_formafacile())
+    neutro = aspetto.ILLUMINAZIONI[aspetto.ILLUMINAZIONE_STUDIO_NEUTRO]
+    esegui(comandi.ID_ILLUMINAZIONE_PRESET, preset=neutro.chiave)
+    verifica(
+        nome_utente in nomi_scena(),
+        "sostituendo l'illuminazione la luce dell'utente resta dov'è",
+    )
+    verifica(
+        len(luci_formafacile()) == len(neutro.luci),
+        f"lo studio neutro crea {len(neutro.luci)} luci: {len(luci_formafacile())}",
+    )
+
+    # Sfondo e potenza: si regolano con i campi del pannello.
+    aspetto_scena().luce_intensita = 2.0
+    aspetto_scena().sfondo_colore = (0.1, 0.2, 0.3)
+    aspetto_scena().sfondo_intensita = 0.9
+    verifica(
+        esegui(comandi.ID_APPLICA_AMBIENTE) == {"FINISHED"},
+        f"sfondo e intensità si applicano: {messaggio()}",
+    )
+    for oggetto in luci_formafacile():
+        base = float(oggetto[configuration.CHIAVE_ENERGIA_BASE])
+        verifica(
+            abs(float(oggetto.data.energy) - base * 2.0) < 1e-3,
+            f"{oggetto.name}: la potenza raddoppia rispetto al preset",
+        )
+    nodo = nodo_sfondo(bpy.context.scene)
+    verifica(
+        abs(float(nodo.inputs["Strength"].default_value) - 0.9) < 1e-6,
+        "la luminosità dello sfondo segue il campo",
+    )
+    verifica(
+        max(
+            abs(float(nodo.inputs["Color"].default_value[i]) - (0.1, 0.2, 0.3)[i])
+            for i in range(3)
+        )
+        < 1e-6,
+        "il colore di sfondo segue il campo",
+    )
+
+    # L'illuminazione automatica si adatta alla grandezza della scena: una scena
+    # più grande riceve luci più potenti, non le stesse.
+    cubo = bpy.data.objects[TESTI["NOME_CUBO"]]
+    piccolo = servizio_illuminazione.raggio_scena(bpy.context)
+    cubo.scale = (5.0, 5.0, 5.0)
+    bpy.context.view_layer.update()
+    grande = servizio_illuminazione.raggio_scena(bpy.context)
+    verifica(
+        grande > piccolo * 2.0,
+        f"la scena grande è più grande di quella piccola: {round(piccolo, 2)} e {round(grande, 2)}",
+    )
+    esegui(comandi.ID_ILLUMINAZIONE_AUTOMATICA)
+    energia_grande = max(float(oggetto.data.energy) for oggetto in luci_formafacile())
+    cubo.scale = (1.0, 1.0, 1.0)
+    bpy.context.view_layer.update()
+    esegui(comandi.ID_ILLUMINAZIONE_AUTOMATICA)
+    energia_piccola = max(float(oggetto.data.energy) for oggetto in luci_formafacile())
+    verifica(
+        energia_grande > energia_piccola,
+        f"la potenza cresce con la scena: {round(energia_piccola)} → {round(energia_grande)}",
+    )
+    verifica(
+        energia_grande
+        < aspetto.ILLUMINAZIONI[aspetto.ILLUMINAZIONE_AUTOMATICA].luci[0].energia * 400.0 + 1.0,
+        f"la potenza resta in un intervallo prudente: {round(energia_grande)}",
+    )
+
+    # Il pannello mostra tutto questo, e ogni pulsante porta con sé il suo preset.
+    contesto_ui, _risolutore = contesto_interfaccia()
+    verifica(
+        contesto_ui.illuminazione == aspetto.ILLUMINAZIONE_AUTOMATICA
+        and contesto_ui.illuminazione_luci == len(luci_formafacile()),
+        f"il pannello legge l'illuminazione presente: {contesto_ui.illuminazione}",
+    )
+    registro = disegna_pannello(panel.FORMAFACILE_PT_aspetto)
+    controlla_registro(registro, "aspetto (illuminazione)")
+    verifica(
+        TESTI["AZIONE_ILLUMINAZIONE_AUTOMATICA"] in supporto_finto.testi_comandi(registro),
+        "il pannello propone l'illuminazione automatica",
+    )
+    scelte = [
+        valori["preset"]
+        for valori in supporto_finto.valori(registro, comandi.ID_ILLUMINAZIONE_PRESET)
+    ]
+    verifica(
+        scelte == list(aspetto.ORDINE_ILLUMINAZIONI),
+        f"i pulsanti delle situazioni tipiche passano il preset giusto: {scelte}",
+    )
+    verifica(
+        TESTI["ETICHETTA_ILLUMINAZIONE_ATTUALE"].format(
+            nome=aspetto.illuminazione(aspetto_scena().illuminazione).nome,
+            numero=len(luci_formafacile()),
+        )
+        in supporto_finto.etichette(registro),
+        "il pannello dice quale illuminazione è applicata",
+    )
+
+    # Un preset che non esiste non crea nulla di strano e lo dice comunque.
+    esito = esegui(comandi.ID_ILLUMINAZIONE_PRESET, preset="non-esiste")
+    verifica("FINISHED" in esito, "un preset sconosciuto ricade su quello predefinito")
+    verifica(len(luci_formafacile()) > 0, "le luci del preset predefinito sono state create")
+
+# --------------------------------------- aspetto: telecamera e modi di vedere
+
+
+def angoli_oggetto(oggetto) -> list:
+    """Gli otto angoli del riquadro dell'oggetto, nelle coordinate della scena."""
+    matrice = oggetto.matrix_world
+    return [matrice @ mathutils.Vector(angolo) for angolo in oggetto.bound_box]
+
+
+def dentro_inquadratura(telecamera, oggetto, margine: float = 1.02) -> bool:
+    """Indica se l'oggetto sta tutto dentro l'inquadratura della telecamera."""
+    inversa = telecamera.matrix_world.inverted()
+    dati = telecamera.data
+    for angolo in angoli_oggetto(oggetto):
+        locale = inversa @ angolo
+        if locale.z >= -1e-6:
+            return False
+        orizzontale = abs(locale.x / locale.z) / math.tan(float(dati.angle_x) / 2.0)
+        verticale = abs(locale.y / locale.z) / math.tan(float(dati.angle_y) / 2.0)
+        if orizzontale > margine or verticale > margine:
+            return False
+    return True
+
+
+def prova_telecamera_aspetto() -> None:
+    """Telecamera, inquadratura, ripristino e modi di guardare la scena."""
+    azzera_scena()
+    esegui(comandi.ID_AGGIUNGI_CUBO)
+
+    # Nessuna telecamera all'inizio: il pannello lo dice e non promette nulla.
+    contesto_ui, _risolutore = contesto_interfaccia()
+    verifica(not contesto_ui.telecamera, "senza telecamera il pannello lo segnala")
+    registro = disegna_pannello(panel.FORMAFACILE_PT_aspetto)
+    controlla_registro(registro, "aspetto (senza telecamera)")
+    verifica(
+        TESTI["ERRORE_TELECAMERA_MANCANTE"].split(":")[0]
+        in " ".join(supporto_finto.etichette(registro)),
+        "il pannello avvisa che senza telecamera non si crea l'immagine",
+    )
+
+    verifica(
+        esegui(comandi.ID_AGGIUNGI_TELECAMERA) == {"FINISHED"},
+        f"la telecamera si crea: {messaggio()}",
+    )
+    telecamera = bpy.context.scene.camera
+    verifica(telecamera is not None and telecamera.type == "CAMERA", "la telecamera esiste")
+    verifica(
+        telecamera.name in nomi_scena() and telecamera.name in scelti(),
+        "la telecamera appena creata resta scelta",
+    )
+    verifica(
+        servizio_telecamera.ha_posizione_iniziale(telecamera),
+        "la telecamera ricorda la posizione in cui è nata",
+    )
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_TELECAMERA_AGGIUNTA"].format(nome=telecamera.name),
+        f"il messaggio nomina la telecamera creata: {messaggio()}",
+    )
+
+    # La telecamera guarda la scena e la contiene tutta.
+    cubo = bpy.data.objects[TESTI["NOME_CUBO"]]
+    verifica(
+        dentro_inquadratura(telecamera, cubo),
+        "una telecamera nuova inquadra già gli oggetti della scena",
+    )
+    avanti = telecamera.matrix_world.to_quaternion() @ mathutils.Vector((0.0, 0.0, -1.0))
+    verso = (
+        mathutils.Vector(servizio_illuminazione.centro_scena(bpy.context))
+        - mathutils.Vector(telecamera.location)
+    ).normalized()
+    verifica(avanti.dot(verso) > 0.99, "la telecamera punta al centro della scena")
+
+    # Inquadrare gli oggetti scelti: la distanza segue la grandezza dell'oggetto.
+    esegui(comandi.ID_AGGIUNGI_CILINDRO)
+    cilindro = bpy.data.objects[TESTI["NOME_CILINDRO"]]
+    esegui(comandi.ID_SCEGLI_OGGETTO, oggetto=cilindro.name, modo="sostituisci")
+    esegui(comandi.ID_INQUADRA_TELECAMERA)
+    vicina = (mathutils.Vector(telecamera.location) - mathutils.Vector(cilindro.location)).length
+    verifica(
+        dentro_inquadratura(telecamera, cilindro),
+        "l'oggetto scelto sta tutto dentro l'inquadratura",
+    )
+    cilindro.scale = (3.0, 3.0, 3.0)
+    bpy.context.view_layer.update()
+    verifica(
+        esegui(comandi.ID_INQUADRA_TELECAMERA) == {"FINISHED"},
+        f"la telecamera si inquadra sugli oggetti scelti: {messaggio()}",
+    )
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_TELECAMERA_SCELTI"],
+        "il messaggio dice che è stata inquadrata la scelta",
+    )
+    lontana = (mathutils.Vector(telecamera.location) - mathutils.Vector(cilindro.location)).length
+    verifica(
+        lontana > vicina,
+        f"un oggetto più grande allontana la telecamera: {round(vicina, 2)} → {round(lontana, 2)}",
+    )
+    verifica(
+        dentro_inquadratura(telecamera, cilindro),
+        "anche l'oggetto grande sta tutto dentro l'inquadratura",
+    )
+    verifica(vicina < 100.0, f"la distanza scelta è ragionevole: {round(vicina, 2)}")
+
+    # Senza scelta si inquadra la scena, e il messaggio lo dice.
+    esegui(comandi.ID_DESCEGLI_TUTTO)
+    esegui(comandi.ID_INQUADRA_TELECAMERA)
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_TELECAMERA_SCENA"],
+        f"senza scelta si inquadra tutta la scena: {messaggio()}",
+    )
+    verifica(
+        dentro_inquadratura(telecamera, cubo) and dentro_inquadratura(telecamera, cilindro),
+        "dopo l'inquadratura della scena ci stanno tutti gli oggetti",
+    )
+
+    # Ripristino: si torna esattamente alla posizione iniziale.
+    iniziale = [float(valore) for valore in telecamera[configuration.CHIAVE_TELECAMERA_INIZIALE]]
+    telecamera.location = (12.0, -9.0, 7.0)
+    telecamera.rotation_euler = (0.4, 0.2, 0.1)
+    verifica(
+        esegui(comandi.ID_RIPRISTINA_TELECAMERA) == {"FINISHED"},
+        f"Ripristina rimette a posto la telecamera: {messaggio()}",
+    )
+    verifica(
+        max(abs(float(valore) - iniziale[i]) for i, valore in enumerate(telecamera.location))
+        < 1e-4,
+        "la posizione iniziale è tornata",
+    )
+    verifica(
+        max(
+            abs(float(valore) - iniziale[i + 3])
+            for i, valore in enumerate(telecamera.rotation_euler)
+        )
+        < 1e-4,
+        "anche la rotazione è quella iniziale",
+    )
+
+    # Una telecamera creata da Blender non ha una posizione iniziale: il
+    # comando lo dice invece di inventare un ripristino.
+    bpy.ops.object.camera_add(location=(5.0, -5.0, 3.0))
+    bpy.context.scene.camera = bpy.context.object
+    esito = esegui(comandi.ID_RIPRISTINA_TELECAMERA)
+    verifica("CANCELLED" in esito, "una telecamera senza posizione iniziale non si ripristina")
+    verifica(
+        messaggio() == TESTI["ERRORE_TELECAMERA_INIZIALE"],
+        f"il messaggio spiega perché: {messaggio()}",
+    )
+
+    # Inquadrare senza nessuna telecamera: messaggio chiaro, nessun errore tecnico.
+    for oggetto in [o for o in bpy.context.scene.objects if o.type == "CAMERA"]:
+        bpy.data.objects.remove(oggetto, do_unlink=True)
+    bpy.context.view_layer.objects.active = None
+    bpy.context.scene.camera = None
+    bpy.context.view_layer.update()
+    esito = esegui(comandi.ID_INQUADRA_TELECAMERA)
+    verifica("CANCELLED" in esito, "senza telecamera non si inquadra nulla")
+    verifica(
+        messaggio() == TESTI["ERRORE_TELECAMERA"],
+        f"il messaggio è comprensibile: {messaggio()}",
+    )
+
+    # I due modi di guardare la scena: senza finestra non c'è una Vista 3D, e il
+    # comando lo dice invece di fingere di aver cambiato qualcosa.
+    esegui(comandi.ID_AGGIUNGI_TELECAMERA)
+    for idname, chiave_messaggio in (
+        (comandi.ID_VISTA_LAVORO, "MESSAGGIO_VISTA_LAVORO"),
+        (comandi.ID_ANTEPRIMA_RENDER, "MESSAGGIO_VISTA_ANTEPRIMA"),
+    ):
+        esito = esegui(idname)
+        if esito is not None and "FINISHED" in esito:
+            verifica(
+                messaggio() == TESTI[chiave_messaggio],
+                f"{idname}: il messaggio è quello previsto",
+            )
+            verifica(
+                servizio_telecamera.in_anteprima(bpy.context)
+                == (idname == comandi.ID_ANTEPRIMA_RENDER),
+                f"{idname}: il modo di guardare la scena è quello scelto",
+            )
+        else:
+            verifica(
+                messaggio() == TESTI["ERRORE_VISTA_NON_DISPONIBILE"],
+                f"{idname}: senza Vista 3D il comando lo dice: {messaggio()}",
+            )
+            ESITI.append(f"{idname}: senza finestra il cambio di vista non è provabile qui")
+
+    # Centrare la vista non deve lasciare il cursore 3D spostato.
+    cursore_prima = tuple(float(valore) for valore in bpy.context.scene.cursor.location)
+    esegui(comandi.ID_CENTRA_VISTA)
+    verifica(
+        tuple(float(valore) for valore in bpy.context.scene.cursor.location) == cursore_prima,
+        "il cursore 3D resta dov'era anche quando la vista non si può centrare",
+    )
+
+    contesto_ui, _risolutore = contesto_interfaccia()
+    verifica(
+        contesto_ui.telecamera == bpy.context.scene.camera.name,
+        f"il pannello mostra la telecamera principale: {contesto_ui.telecamera}",
+    )
+    registro = disegna_pannello(panel.FORMAFACILE_PT_aspetto)
+    controlla_registro(registro, "aspetto (telecamera)")
+    for testo in (
+        TESTI["AZIONE_AGGIUNGI_TELECAMERA"],
+        TESTI["AZIONE_INQUADRA_TELECAMERA"],
+        TESTI["AZIONE_RIPRISTINA_TELECAMERA"],
+        TESTI["AZIONE_CENTRA_VISTA"],
+        TESTI["AZIONE_VISTA_LAVORO"],
+        TESTI["AZIONE_ANTEPRIMA_IMMAGINE"],
+    ):
+        verifica(testo in supporto_finto.testi_comandi(registro), f"il pannello propone: {testo}")
+
+# --------------------------------------------------- aspetto: immagine finale
+
+
+def luminosita_media(percorso: str) -> float:
+    """Luminosità media dell'immagine creata: dice se la scena è illuminata."""
+    immagine = bpy.data.images.load(percorso, check_existing=False)
+    try:
+        pixel = list(immagine.pixels)
+    finally:
+        bpy.data.images.remove(immagine)
+    if not pixel:
+        return 0.0
+    campioni = len(pixel) - (len(pixel) % 4)
+    if campioni <= 0:
+        return 0.0
+    totale = sum(pixel[indice + canale] for indice in range(0, campioni, 4) for canale in range(3))
+    return totale / (campioni // 4 * 3)
+
+
+def firma_png(percorso: str) -> bool:
+    """Indica se il file comincia come una vera immagine PNG."""
+    with open(percorso, "rb") as file_immagine:
+        return file_immagine.read(8) == b"\x89PNG\r\n\x1a\n"
+
+
+def prova_immagine_finale() -> None:
+    """Una immagine vera viene creata, salvata e riaperta."""
+    azzera_scena()
+    esegui(comandi.ID_AGGIUNGI_CUBO)
+    esegui(comandi.ID_ILLUMINAZIONE_AUTOMATICA)
+    cartella = tempfile.mkdtemp(prefix="formafacile_prova_")
+
+    # Controlli prima di iniziare: telecamera e cartella.
+    esito = esegui(comandi.ID_CREA_IMMAGINE_FINALE, cartella=cartella)
+    verifica("CANCELLED" in esito, "senza telecamera l'immagine non si crea")
+    verifica(
+        messaggio() == TESTI["ERRORE_TELECAMERA_MANCANTE"],
+        f"il messaggio chiede prima la telecamera: {messaggio()}",
+    )
+    esegui(comandi.ID_AGGIUNGI_TELECAMERA)
+
+    esito = esegui(comandi.ID_CREA_IMMAGINE_FINALE)
+    verifica("CANCELLED" in esito, "senza cartella l'immagine non si crea")
+    verifica(
+        messaggio() == TESTI["ERRORE_CARTELLA_MANCANTE"],
+        f"il messaggio chiede la cartella: {messaggio()}",
+    )
+    esito = esegui(comandi.ID_CREA_IMMAGINE_FINALE, cartella=str(Path(cartella) / "non-esiste"))
+    verifica("CANCELLED" in esito, "una cartella che non esiste non va bene")
+    verifica(
+        messaggio() == TESTI["ERRORE_CARTELLA_INESISTENTE"],
+        f"il messaggio è comprensibile: {messaggio()}",
+    )
+
+    # Risoluzione enorme: il comando si ferma prima di far mancare la memoria.
+    scena = bpy.context.scene
+    larghezza_vera, altezza_vera = scena.render.resolution_x, scena.render.resolution_y
+    scena.render.resolution_x, scena.render.resolution_y = 8000, 6000
+    esito = esegui(comandi.ID_CREA_IMMAGINE_FINALE, cartella=cartella)
+    verifica("CANCELLED" in esito, "una risoluzione esagerata viene rifiutata")
+    verifica(
+        messaggio() == TESTI["ERRORE_PIXEL_TROPPI"],
+        f"il messaggio spiega il motivo: {messaggio()}",
+    )
+    scena.render.resolution_x, scena.render.resolution_y = larghezza_vera, altezza_vera
+
+    # Memoria: se la misura è disponibile, una richiesta impossibile si ferma.
+    disponibile = servizio_rendering.memoria_disponibile_mb()
+    if disponibile is None:
+        ESITI.append("memoria non misurabile qui: il controllo memoria non è provabile")
+    else:
+        verifica(
+            servizio_rendering.problema_memoria(10**12) == "ERRORE_MEMORIA_INSUFFICIENTE",
+            "una richiesta di memoria impossibile viene riconosciuta",
+        )
+        verifica(
+            servizio_rendering.problema_memoria(160 * 120) == "",
+            "un'immagine piccola non fa scattare l'avviso di memoria",
+        )
+        verifica(
+            disponibile > 0.0,
+            f"la memoria libera si legge: {round(disponibile)} MB",
+        )
+
+    # La qualità scelta è quella scritta nel pannello: valori prudenti.
+    aspetto_scena().qualita = aspetto.QUALITA_ANTEPRIMA
+    aspetto_scena().render_percentuale = aspetto.QUALITA[aspetto.QUALITA_ANTEPRIMA].percentuale
+    aspetto_scena().render_campioni = configuration.CAMPIONI_AUTOMATICI
+    aspetto_scena().render_motore = aspetto.MOTORE_CYCLES
+    aspetto_scena().render_formato = aspetto.FORMATO_PNG
+    aspetto_scena().cartella_immagine = cartella
+    scena.render.resolution_x, scena.render.resolution_y = 320, 240
+
+    qualita = aspetto.QUALITA[aspetto.QUALITA_ANTEPRIMA]
+    verifica(
+        qualita.percentuale <= configuration.QUALITA_PERCENTUALE_MASSIMA
+        and qualita.campioni_cycles < 4096,
+        "la qualità di anteprima è prudente: percentuale ridotta e pochi campioni",
+    )
+    verifica(
+        aspetto.QUALITA[aspetto.QUALITA_ALTA].campioni_cycles
+        < aspetto.QUALITA[aspetto.QUALITA_STANDARD].campioni_cycles * 8
+        and aspetto.QUALITA[aspetto.QUALITA_ALTA].percentuale
+        <= configuration.QUALITA_PERCENTUALE_MASSIMA,
+        "nemmeno la qualità alta chiede valori da computer potente",
+    )
+
+    # La creazione vera: il file viene scritto, riaperto e guardato.
+    esito = esegui(comandi.ID_CREA_IMMAGINE_FINALE)
+    verifica(
+        esito is not None and "FINISHED" in esito,
+        f"l'immagine finale si crea davvero: {messaggio()}",
+    )
+    percorso = str(scena.render.filepath)
+    verifica(Path(percorso).is_file(), f"il file dell'immagine esiste: {Path(percorso).name}")
+    verifica(
+        Path(percorso).name.startswith(TESTI["IMMAGINE_PREFISSO_FILE"]),
+        f"il nome del file comincia con il prefisso previsto: {Path(percorso).name}",
+    )
+    verifica(
+        Path(percorso).suffix == aspetto.ESTENSIONI_FORMATI[aspetto.FORMATO_PNG],
+        f"l'estensione è quella del formato scelto: {Path(percorso).suffix}",
+    )
+    verifica(
+        Path(percorso).parent == Path(cartella),
+        "l'immagine è salvata nella cartella scelta dall'utente",
+    )
+    verifica(firma_png(percorso), "il file è un'immagine PNG vera")
+    dimensioni = servizio_rendering.dimensioni_immagine(percorso)
+    verifica(
+        dimensioni == (160, 120),
+        f"la grandezza è quella prevista dalla qualità: {dimensioni} invece di (160, 120)",
+    )
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_IMMAGINE_CREATA"].format(percorso=percorso),
+        f"il messaggio dice dove è stata salvata: {messaggio()}",
+    )
+    verifica(
+        int(scena.render.resolution_percentage) == qualita.percentuale,
+        f"la percentuale di risoluzione è quella scelta: {scena.render.resolution_percentage}",
+    )
+    verifica(
+        int(scena.cycles.samples) == qualita.campioni_cycles,
+        f"i campioni sono quelli consigliati dalla qualità: {scena.cycles.samples}",
+    )
+    verifica(
+        scena.render.image_settings.file_format == "PNG",
+        f"il formato del file è quello scelto: {scena.render.image_settings.file_format}",
+    )
+    verifica(
+        servizio_rendering.motore_della_scena(scena) == "CYCLES",
+        "il motore scelto nel pannello è quello che ha disegnato l'immagine",
+    )
+    luminosita = luminosita_media(percorso)
+    verifica(
+        0.01 < luminosita < 0.99,
+        f"l'immagine non è né nera né bianca: luminosità media {round(luminosita, 3)}",
+    )
+
+    # "Come in Blender" non cambia il motore della scena: chi ha già scelto un
+    # motore se lo ritrova.
+    motore_prima = servizio_rendering.motore_della_scena(scena)
+    verifica(
+        servizio_rendering.imposta_motore(scena, aspetto.MOTORE_COME_IN_BLENDER),
+        "la voce Come in Blender è sempre accettata",
+    )
+    verifica(
+        servizio_rendering.motore_della_scena(scena) == motore_prima,
+        f"Come in Blender lascia il motore dov'è: {motore_prima}",
+    )
+    esito_motore = esegui(comandi.ID_CREA_IMMAGINE_FINALE)
+    verifica(
+        esito_motore is not None and "FINISHED" in esito_motore,
+        f"con Come in Blender l'immagine si crea lo stesso: {messaggio()}",
+    )
+
+    # Un secondo formato: il JPEG viene scritto con la sua estensione.
+    aspetto_scena().render_formato = aspetto.FORMATO_JPEG
+    esito = esegui(comandi.ID_CREA_IMMAGINE_FINALE)
+    verifica("FINISHED" in esito, f"anche il JPEG si crea: {messaggio()}")
+    percorso_jpg = str(scena.render.filepath)
+    verifica(
+        Path(percorso_jpg).suffix == ".jpg" and Path(percorso_jpg).is_file(),
+        f"il file JPEG esiste con la sua estensione: {Path(percorso_jpg).name}",
+    )
+    verifica(
+        scena.render.image_settings.color_mode == "RGB",
+        "il JPEG è scritto senza trasparenza, come deve essere",
+    )
+    verifica(
+        servizio_rendering.dimensioni_immagine(percorso_jpg) == (160, 120),
+        "anche il JPEG si riapre e ha la grandezza giusta",
+    )
+    verifica(
+        Path(percorso_jpg).name != Path(percorso).name,
+        "i nomi dei file sono diversi, così nulla viene sovrascritto",
+    )
+
+    # Il pannello mostra i valori dell'immagine, compresi quelli avanzati.
+    bpy.context.scene.formafacile.modalita = configuration.MODALITA_COMPLETA
+    contesto_ui, _risolutore = contesto_interfaccia()
+    verifica(
+        contesto_ui.immagine_larghezza == 160 and contesto_ui.immagine_altezza == 120,
+        f"il pannello calcola la grandezza dell'immagine: "
+        f"{contesto_ui.immagine_larghezza}×{contesto_ui.immagine_altezza}",
+    )
+    registro = disegna_pannello(panel.FORMAFACILE_PT_aspetto)
+    controlla_registro(registro, "aspetto (immagine finale)")
+    campi = [proprieta for _tipo, proprieta in supporto_finto.campi(registro)]
+    for proprieta in (
+        configuration.CAMPO_QUALITA,
+        configuration.CAMPO_CARTELLA_IMMAGINE,
+        configuration.CAMPO_RENDER_PERCENTUALE,
+        configuration.CAMPO_RENDER_CAMPIONI,
+        configuration.CAMPO_RENDER_MOTORE,
+        configuration.CAMPO_RENDER_FORMATO,
+    ):
+        verifica(proprieta in campi, f"in modalità Completa il pannello mostra {proprieta}")
+    verifica(
+        TESTI["ETICHETTA_QUALITA_RIASSUNTO"].format(
+            nome=aspetto.qualita(aspetto.QUALITA_ANTEPRIMA).nome,
+            larghezza=160,
+            altezza=120,
+            campioni=qualita.campioni_cycles,
+        )
+        in supporto_finto.etichette(registro),
+        "il pannello dice in chiaro quanto sarà grande l'immagine",
+    )
+    bpy.context.scene.formafacile.modalita = configuration.MODALITA_SEMPLICE
+
+    # Il pannello dei principianti non mostra i valori tecnici.
+    registro = disegna_pannello(panel.FORMAFACILE_PT_aspetto)
+    campi = [proprieta for _tipo, proprieta in supporto_finto.campi(registro)]
+    verifica(
+        configuration.CAMPO_RENDER_CAMPIONI not in campi,
+        "in modalità Semplice i valori tecnici non compaiono",
+    )
+
+    # Un file che non è un'immagine non viene spacciato per riuscito.
+    finto = Path(cartella) / "non_e_una_immagine.png"
+    finto.write_text("questo non è un PNG", encoding="utf-8")
+    verifica(
+        servizio_rendering.dimensioni_immagine(str(finto)) is None,
+        "un file che non si apre viene riconosciuto: niente falsi successi",
+    )
+    verifica(
+        servizio_rendering.dimensioni_immagine(str(Path(cartella) / "manca.png")) is None,
+        "un file che non esiste non ha dimensioni",
+    )
+    verifica(
+        servizio_rendering.problema_cartella(str(finto)) == "ERRORE_CARTELLA_INESISTENTE",
+        "un file al posto della cartella viene rifiutato",
+    )
+
+    # Un errore di Blender diventa una spiegazione in italiano, mai una traccia
+    # di errore tecnica.
+    percorso_male = str(Path(cartella) / "sottocartella-che-non-esiste" / "immagine.png")
+    errore_ottenuto = None
+    try:
+        servizio_rendering.disegna_immagine(bpy.context, percorso_male)
+    except servizio_rendering.ErroreImmaginazione as errore:
+        errore_ottenuto = errore
+    verifica(
+        errore_ottenuto is not None and errore_ottenuto.testo.strip(),
+        f"un salvataggio impossibile dà un errore comprensibile: "
+        f"{errore_ottenuto.testo if errore_ottenuto else 'nessun errore'}",
+    )
+    verifica(
+        errore_ottenuto is None or errore_ottenuto.chiave_testo in TESTI,
+        "il testo dell'errore arriva dalla mappa centrale",
+    )
+    verifica(
+        not os.path.exists(percorso_male),
+        "quando il salvataggio fallisce non resta nessun file a metà",
+    )
+
+    # La fine del disegno nella finestra: i segnali di Blender si registrano e
+    # si tolgono, e quando arrivano dicono se l'immagine c'è.
+    servizio_rendering.segui_esito(percorso)
+    presenti = [
+        funzione for funzione in bpy.app.handlers.render_complete if funzione.__name__ == "fine"
+    ]
+    verifica(len(presenti) == 1, "il segnale di fine lavoro è registrato una volta sola")
+    servizio_rendering.segui_esito(percorso)
+    verifica(
+        len([f for f in bpy.app.handlers.render_complete if f.__name__ == "fine"]) == 1,
+        "registrare di nuovo non accumula segnali doppi",
+    )
+    presenti = [f for f in bpy.app.handlers.render_complete if f.__name__ == "fine"]
+    if presenti:
+        presenti[0]()
+        verifica(
+            servizio_rendering.dimensioni_immagine(percorso) is not None,
+            "l'immagine della prova è ancora leggibile quando il segnale arriva",
+        )
+        verifica(
+            messaggio() == TESTI["MESSAGGIO_IMMAGINE_CREATA"].format(percorso=percorso),
+            f"il segnale di fine dice dove è l'immagine: {messaggio()}",
+        )
+    verifica(
+        not [f for f in bpy.app.handlers.render_complete if f.__name__ == "fine"],
+        "dopo la fine i segnali di FormaFacile sono stati tolti",
+    )
+    servizio_rendering.segui_esito(str(Path(cartella) / "manca.png"))
+    interrotti = [
+        funzione for funzione in bpy.app.handlers.render_cancel if funzione.__name__ == "interrotto"
+    ]
+    verifica(len(interrotti) == 1, "il segnale di interruzione è registrato")
+    if interrotti:
+        interrotti[0]()
+        verifica(
+            messaggio() == TESTI["MESSAGGIO_IMMAGINE_ANNULLATA"],
+            f"un lavoro interrotto lo dice e non promette un file: {messaggio()}",
+        )
+    servizio_rendering.smetti_di_seguire()
+    verifica(
+        not [f for f in bpy.app.handlers.render_cancel if f.__name__ == "interrotto"],
+        "anche i segnali di interruzione vengono tolti",
+    )
+
+    # Messaggio di fine lavoro: leggibile, assente o rovinato. Il messaggio dice
+    # sempre la verità, anche quando il file non c'è.
+    servizio_rendering.annuncia_esito(percorso)
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_IMMAGINE_CREATA"].format(percorso=percorso),
+        "un file leggibile viene annunciato come riuscito",
+    )
+    mancante = str(Path(cartella) / "mai-scritto.png")
+    servizio_rendering.annuncia_esito(mancante, tentativi=configuration.TENTATIVI_ESITO)
+    verifica(
+        messaggio() == TESTI["ERRORE_IMMAGINE_NON_SCRITTA"],
+        f"un file che non c'è non viene spacciato per riuscito: {messaggio()}",
+    )
+    servizio_rendering.annuncia_esito(str(finto))
+    verifica(
+        messaggio() == TESTI["ERRORE_IMMAGINE_NON_LEGGIBILE"],
+        f"un file rovinato viene segnalato come non leggibile: {messaggio()}",
+    )
+    servizio_rendering.annuncia_esito(str(finto), interrotto=True)
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_IMMAGINE_ANNULLATA"],
+        "un lavoro interrotto resta un lavoro interrotto, anche se il file è strano",
+    )
+
+    # La cartella scelta resta scritta nella scena: si ritrova riaprendo il file.
+    verifica(
+        aspetto_scena().cartella_immagine == cartella
+        and stato.cartella_della_scena(bpy.context.scene) == cartella,
+        "la cartella dell'immagine è salvata nello stato della scena",
+    )
+    esito_finale = esegui(comandi.ID_CREA_IMMAGINE_FINALE)
+    verifica(
+        esito_finale is not None and "FINISHED" in esito_finale and Path(cartella).is_dir(),
+        "la cartella resta al suo posto dopo la creazione",
+    )
+
 
 def main() -> int:
     azzera_scena()
@@ -2793,6 +3860,10 @@ def main() -> int:
         prova_testi_dei_comandi()
         prova_messaggi()
         prova_storia()
+        prova_materiali()
+        prova_illuminazione()
+        prova_telecamera_aspetto()
+        prova_immagine_finale()
         prova_tabelle()
     finally:
         componente.unregister()
