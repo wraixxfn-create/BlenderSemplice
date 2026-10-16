@@ -4,3 +4,6 @@ __pycache__/
 /dist/
 *.blend1
 *.blend2
+
+# Librerie fittizie per i test con il modulo bpy
+/.cache/

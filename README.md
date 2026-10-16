@@ -25,14 +25,16 @@ python3 scripts/avvia_formafacile.py --blender "/percorso/al/programma/blender"
 
 In alternativa imposta la variabile d'ambiente `FORMAFACILE_BLENDER` oppure configura il file `config.ini` nella cartella di configurazione utente di FormaFacile 3D. Il programma di avvio cerca Blender nel `PATH`, nelle posizioni standard del sistema e nelle impostazioni esplicite; non dipende da un percorso personale fissato nel codice.
 
-All'avvio viene registrato il componente aggiuntivo dalla copia del repository. Nella Vista 3D apri la barra laterale con `N` e scegli la scheda **FormaFacile**. Il pulsante **Aggiungi cubo** crea un cubo reale, rinominato **Cubo**, e consente di annullare l'azione con Blender.
+All'avvio viene registrato il componente aggiuntivo dalla copia del repository. Nella Vista 3D apri la barra laterale con `N` e scegli la scheda **FormaFacile**: trovi quattro pannelli — **Azioni principali**, **La mia scena**, **Oggetto scelto** e, nella modalità completa, **Comandi di Blender**.
+
+Nelle **Azioni principali** si creano **Cubo**, **Sfera**, **Cilindro**, **Piano** e **Luce**, si annulla e si ripete, si torna alla vista iniziale e si inquadra la scena. In **La mia scena** c'è l'elenco degli oggetti: si sceglie per nome (anche con più oggetti), si rinomina, si nasconde e si cerca. Il pannello **Oggetto scelto** cambia con la scelta: sposta, ruota e ingrandisce a passi, duplica, elimina, inquadra l'oggetto, cambia la potenza della luce o guarda la scena dalla telecamera. Ogni azione lascia un messaggio breve in italiano e tutte le azioni dei pannelli si possono annullare con `Ctrl+Z`, perché usano la storia di Blender.
 
 ## Installazione del componente aggiuntivo
 
 Per installare una copia indipendente dal programma di avvio:
 
 1. Crea il pacchetto con `python3 scripts/crea_pacchetto.py`.
-2. In Blender apri **Modifica → Preferenze → Estensioni** e usa il comando **Installa da disco** per selezionare `dist/formafacile_3d-0.1.0.zip`.
+2. In Blender apri **Modifica → Preferenze → Estensioni** e usa il comando **Installa da disco** per selezionare `dist/formafacile_3d-0.2.0.zip`.
 3. Attiva **FormaFacile 3D**, se Blender non l'ha già attivato.
 4. Nella Vista 3D apri la barra laterale con `N` e seleziona **FormaFacile**.
 
@@ -46,13 +48,25 @@ Non sono richieste librerie Python aggiuntive per i controlli di base:
 python3 scripts/controlla.py
 ```
 
-Per eseguire anche il test reale dell'operatore in Blender 4.5.x:
+Per eseguire anche le prove del componente aggiuntivo con il modulo `bpy`, senza che serva Blender
+grafico e senza installare nulla nel sistema:
+
+```sh
+python3 scripts/controlla.py --test-bpy
+```
+
+Il comando usa l'ambiente virtuale `.venv` se esiste e prepara nella cartella `.cache` alcune
+librerie grafiche fittizie, necessarie soltanto per avviare il modulo senza schermo (vedi
+`docs/SVILUPPO.md`).
+
+Per eseguire le stesse prove con una distribuzione Blender 4.5.x completa:
 
 ```sh
 python3 scripts/controlla.py --test-blender
 ```
 
-Il secondo comando individua Blender con le stesse regole del programma di avvio e avvia Blender senza finestre con il test `tests/blender/test_addon.py`. È anche possibile eseguire direttamente:
+Quel comando individua Blender con le stesse regole del programma di avvio e avvia Blender senza
+finestre con il test `tests/blender/test_addon.py`. È anche possibile eseguire direttamente:
 
 ```sh
 blender --background --factory-startup --python tests/blender/test_addon.py
@@ -68,6 +82,16 @@ Su Windows, se Python è installato tramite Python Launcher, usa `py -3` al post
 
 ## Stato e limiti
 
-Questa è una base tecnica iniziale, non una versione completa né ancora verificata con Blender grafico: include il pannello italiano e un'azione che usa le funzioni reali di Blender per aggiungere un cubo. Materiali, procedure guidate, luci, camera, creazione dell’immagine finale, gestione del progetto e assistente locale non sono ancora implementati. Il pannello del componente aggiuntivo è il punto di benvenuto; per ora non rimpiazza la schermata iniziale o la disposizione standard di Blender.
+Questa è la prima interfaccia utilizzabile, verificata automaticamente con il modulo `bpy` senza
+schermo (oltre 1600 controlli) e con 109 prove di unità; **non è ancora stata provata su uno schermo**,
+perché nell'ambiente di sviluppo non è installata una distribuzione Blender grafica. Restano da
+provare a mano disegno dei pannelli, suggerimenti, ridimensionamento, navigazione con il mouse e
+annullamento interattivo: l'elenco completo è in `docs/LIMITAZIONI.md`.
 
-Consulta `docs/ARCHITETTURA.md`, `docs/LIMITAZIONI.md` e `docs/LICENZE.md` per il piano, i limiti verificati e le note sulle licenze.
+Non sono ancora presenti materiali e colori semplificati, sfondo, anteprima e immagine finale,
+animazione, gerarchia fra oggetti, importazione ed esportazione, scene iniziali guidate e assistente
+locale. Non ci sono pulsanti fittizi per queste funzioni. I pannelli non rimpiazzano la schermata
+iniziale né la disposizione standard di Blender.
+
+Consulta `docs/ARCHITETTURA.md` per il piano, `docs/LIMITAZIONI.md` per i limiti verificati,
+`docs/REVISIONE_UX.md` per la revisione dei termini italiani e `docs/LICENZE.md` per le licenze.

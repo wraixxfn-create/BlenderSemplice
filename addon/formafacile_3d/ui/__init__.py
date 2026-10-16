@@ -1,5 +1,7 @@
-"""Elementi dell'interfaccia semplificata."""
+"""Pacchetto dell'interfaccia di FormaFacile 3D."""
 
-from .panel import FORMAFACILE_PT_pannello
+from __future__ import annotations
 
-CLASSI = (FORMAFACILE_PT_pannello,)
+from . import panel
+
+CLASSI = (*panel.CLASSI,)
