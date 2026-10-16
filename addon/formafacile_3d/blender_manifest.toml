@@ -1,0 +1,16 @@
+schema_version = "1.0.0"
+id = "formafacile_3d"
+version = "0.1.0"
+name = "FormaFacile 3D"
+tagline = "Strumenti essenziali per iniziare a creare scene 3D"
+type = "add-on"
+maintainer = "Contributori di FormaFacile 3D"
+blender_version_min = "4.5.0"
+blender_version_max = "4.6.0"
+license = ["SPDX:GPL-2.0-or-later"]
+
+[build]
+paths_exclude_pattern = [
+    "__pycache__/",
+    ".*",
+]

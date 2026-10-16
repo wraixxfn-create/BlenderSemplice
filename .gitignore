@@ -1,0 +1,6 @@
+# File generati dai controlli e dai pacchetti
+__pycache__/
+*.py[cod]
+/dist/
+*.blend1
+*.blend2
