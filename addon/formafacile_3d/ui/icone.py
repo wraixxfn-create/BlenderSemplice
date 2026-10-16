@@ -15,8 +15,10 @@ from ..localization import TESTI
 ICONE_USATE = frozenset(
     {
         "ADD",
+        "ALIGN_LEFT",
         "ARMATURE_DATA",
         "BACK",
+        "BOOKMARKS",
         "CAMERA_DATA",
         "CHECKBOX_DEHLT",
         "CHECKBOX_HLT",
@@ -29,6 +31,7 @@ ICONE_USATE = frozenset(
         "FORWARD",
         "FULLSCREEN_ENTER",
         "GREASEPENCIL",
+        "GROUP",
         "HIDE_OFF",
         "HIDE_ON",
         "HOME",
@@ -45,15 +48,28 @@ ICONE_USATE = frozenset(
         "MESH_PLANE",
         "MESH_TORUS",
         "MESH_UVSPHERE",
+        "MOD_ARRAY",
+        "MOD_BEVEL",
+        "MOD_BOOLEAN",
+        "MOD_MIRROR",
+        "MOD_SMOOTH",
+        "MOD_SOLIDIFY",
+        "MOD_SUBSURF",
+        "MODIFIER",
+        "NORMALS_FACE",
         "OBJECT_DATA",
         "OBJECT_ORIGIN",
         "ORIENTATION_GIMBAL",
+        "OUTLINER_COLLECTION",
         "PASTEDOWN",
         "PIVOT_BOUNDBOX",
+        "PLAY",
         "REMOVE",
         "SNAP_FACE",
+        "SORT_ASC",
         "SPEAKER",
         "TRASH",
+        "UNLINKED",
         "UNLOCKED",
         "VIEWZOOM",
         "VOLUME_DATA",
@@ -96,6 +112,27 @@ _PAROLE_TIPO = {
     "GREASEPENCIL": "TIPO_DISEGNO",
 }
 
+# Parole semplici dei modificatori non applicati: sono i nomi che l'utente
+# vede nell'elenco delle modifiche, accanto alla possibilità di toglierle.
+_PAROLE_MODIFICATORE = {
+    "BEVEL": "PAROLA_MOD_BEVEL",
+    "SUBSURF": "PAROLA_MOD_SUBSURF",
+    "MIRROR": "PAROLA_MOD_MIRROR",
+    "ARRAY": "PAROLA_MOD_ARRAY",
+    "SOLIDIFY": "PAROLA_MOD_SOLIDIFY",
+    "BOOLEAN": "PAROLA_MOD_BOOLEAN",
+}
+
+# Icona di ogni tipo di modifica, dagli stessi nomi usati dai pulsanti.
+_ICONE_MODIFICATORE = {
+    "BEVEL": "MOD_BEVEL",
+    "SUBSURF": "MOD_SUBSURF",
+    "MIRROR": "MOD_MIRROR",
+    "ARRAY": "MOD_ARRAY",
+    "SOLIDIFY": "MOD_SOLIDIFY",
+    "BOOLEAN": "MOD_BOOLEAN",
+}
+
 # Gruppi usati per riassumere una scelta multipla in parole semplici.
 _GRUPPI_PLURALE = {
     "MESH": "TIPO_FORMA_PLURALE",
@@ -117,3 +154,13 @@ def parola_tipo(tipo: str) -> str:
 def chiave_plurale_tipo(tipo: str) -> str:
     """Chiave del testo usato per contare più oggetti dello stesso tipo."""
     return _GRUPPI_PLURALE.get(tipo, "TIPO_ALTRO_PLURALE")
+
+
+def parola_modificatore(tipo: str) -> str:
+    """Parola italiana semplice per un tipo di modifica di Blender."""
+    return TESTI[_PAROLE_MODIFICATORE.get(str(tipo).upper(), "PAROLA_MOD_ALTRO")]
+
+
+def icona_modificatore(tipo: str) -> str:
+    """Icona della modifica: il tipo sconosciuto usa l'icona generica."""
+    return _ICONE_MODIFICATORE.get(str(tipo).upper(), "MODIFIER")

@@ -93,7 +93,9 @@ che cosa il pannello mostrerebbe e se i comandi, i campi e le icone esistono dav
 ## Prova visiva
 
 Avvia il programma, apri la barra laterale della Vista 3D con `N`, scegli **FormaFacile** e prova i
-quattro pannelli: crea una forma, sceglila e rinominala dall'elenco, nascondila e falla ricomparire,
+cinque pannelli: crea una forma, sceglila e rinominala dall'elenco, nascondila e falla ricomparire,
+arrotondala e rispecchiala con gli strumenti guidati del pannello **Dai forma**, raggruppala e prova
+la guida della casetta,
 spostala a passi, annulla e ripeti. Prova poi il cambio di modalità (Semplice/Completa), il
 ridimensionamento della finestra e un cambio di disposizione dei pannelli. L'elenco completo delle
 verifiche manuali è in `docs/LIMITAZIONI.md` e in `docs/REVISIONE_UX.md`.

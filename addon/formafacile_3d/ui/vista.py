@@ -8,17 +8,20 @@ quindi non può mostrare dati vecchi.
 from __future__ import annotations
 
 from .. import configuration
+from ..blender import modificatori as servizio_modificatori
+from ..blender import raccolte as servizio_raccolte
 from ..blender import selezione
 from ..blender import vista as servizio_vista
 from ..scene import misure
 from ..scene.stato import (
     grandezza_della_scena,
+    guida_della_scena,
     messaggio_della_scena,
     modalita_della_scena,
     passo_della_scena,
 )
 from . import icone
-from .modello import Contesto, Oggetto
+from .modello import Contesto, Modificatore, Oggetto, Raccolta
 
 
 def raccogli_contesto(context) -> tuple[Contesto, dict[str, object]]:
@@ -39,6 +42,7 @@ def raccogli_contesto(context) -> tuple[Contesto, dict[str, object]]:
             risolutore[oggetto.name] = oggetto
 
     messaggio, recente = messaggio_della_scena(scena)
+    guida, passo_guida = guida_della_scena(scena)
     contesto = Contesto(
         modalita=modalita,
         in_modalita_oggetto=getattr(context, "mode", "OBJECT") == "OBJECT",
@@ -59,8 +63,52 @@ def raccogli_contesto(context) -> tuple[Contesto, dict[str, object]]:
         unita_lunghezza=_unita_lunghezza(scena),
         unita_angolo=_unita_angolo(scena),
         grandezza_forma=grandezza_della_scena(scena),
+        raccolte=_raccolte(scena),
+        modificatori=_modificatori(context, vettore),
+        guida=guida,
+        passo_guida=passo_guida,
     )
     return contesto, risolutore
+
+
+def _raccolte(scena) -> tuple[Raccolta, ...]:
+    """Gruppi della scena, pronti per l'elenco dell'interfaccia."""
+    return tuple(
+        Raccolta(
+            chiave=gruppo.chiave,
+            nome=gruppo.nome,
+            quanti=gruppo.quanti,
+            scelti=gruppo.scelti,
+            nascosto=gruppo.nascosto,
+        )
+        for gruppo in servizio_raccolte.gruppi(scena)
+    )
+
+
+def _modificatori(context, vettore) -> tuple[Modificatore, ...]:
+    """Modifiche non applicate sull'oggetto attivo, in parole semplici.
+
+    Le modifiche si mostrano per l'oggetto attivo: sono i comandi guidati a
+    lavorare su quello, e la forma di partenza resta sempre quella creata
+    dall'utente.
+    """
+    attivo = getattr(vettore, "objects", None)
+    attivo = getattr(attivo, "active", None) if attivo is not None else None
+    if attivo is None:
+        return ()
+    elenco = []
+    for modificatore in servizio_modificatori.elenca(attivo):
+        tipo = servizio_modificatori.tipo_di(modificatore)
+        elenco.append(
+            Modificatore(
+                chiave=servizio_modificatori.nome_di(modificatore),
+                nome=servizio_modificatori.nome_di(modificatore),
+                parola=icone.parola_modificatore(tipo),
+                icona=icone.icona_modificatore(tipo),
+                problema=servizio_modificatori.problema_di(context, modificatore),
+            )
+        )
+    return tuple(elenco)
 
 
 def _impostazioni_unita(scena):
@@ -146,6 +194,7 @@ def _fotografa_oggetto(oggetto, scena, attivo) -> Oggetto:
         nome_dati=getattr(dati, "name", "") if dati is not None else "",
         vertici=vertici,
         facce=facce,
+        liscio=bool(tipo == "MESH" and servizio_modificatori.e_liscia(oggetto)),
         potenza_luce=potenza,
         telecamera_principale=bool(scena is not None and getattr(scena, "camera", None) is oggetto),
     )

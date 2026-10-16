@@ -12,8 +12,41 @@ import time
 
 import bpy
 
-from .. import configuration
+from .. import comandi, configuration
 from ..localization import TESTI
+
+
+def _voci_asse_allinea():
+    """Voci dell'asse di allineamento, con i testi italiani.
+
+    Le voci si costruiscono in una funzione, non dentro l'annotazione della
+    proprietà: Blender rilegge le annotazioni quando registra la classe e una
+    comprensione scritta lì dentro fallirebbe in quel momento.
+    """
+    return tuple(
+        (asse, TESTI[comandi.TESTI_ASSE[asse]], TESTI[comandi.AIUTI_ASSE[asse]])
+        for asse in comandi.ASSI
+    )
+
+
+def _voci_bordo_allinea():
+    """Voci del bordo di allineamento: inizio, centro o fine."""
+    return tuple(
+        (modo, TESTI[comandi.TESTI_ALLINEAMENTO[modo]], TESTI["AIUTO_BORDO_ALLINEA"])
+        for modo in comandi.MODI_ALLINEAMENTO
+    )
+
+
+def _voci_riferimento_allinea():
+    """Voci del riferimento: il bordo della forma o il suo punto di riferimento."""
+    return tuple(
+        (
+            chiave,
+            TESTI[comandi.TESTI_RIFERIMENTO[chiave]],
+            TESTI["AIUTO_RIFERIMENTO_ALLINEA"],
+        )
+        for chiave in comandi.RIFERIMENTI_ALLINEAMENTO
+    )
 
 
 class FORMAFACILE_PG_stato(bpy.types.PropertyGroup):
@@ -51,6 +84,29 @@ class FORMAFACILE_PG_stato(bpy.types.PropertyGroup):
         precision=2,
         unit="LENGTH",
     )
+    # Impostazioni dell'allineamento: si scelgono una volta e valgono per ogni
+    # pressione di Allinea e Spazia, come la modalità di lavoro.
+    asse_allinea: bpy.props.EnumProperty(
+        name=TESTI["ETICHETTA_ASSE_ALLINEA"],
+        description=TESTI["AIUTO_ASSE_ALLINEA"],
+        items=_voci_asse_allinea(),
+        default=configuration.ALLINEA_ASSE_PREDEFINITO,
+    )
+    bordo_allinea: bpy.props.EnumProperty(
+        name=TESTI["ETICHETTA_BORDO_ALLINEA"],
+        description=TESTI["AIUTO_BORDO_ALLINEA"],
+        items=_voci_bordo_allinea(),
+        default=configuration.ALLINEA_BORDO_PREDEFINITO,
+    )
+    riferimento_allinea: bpy.props.EnumProperty(
+        name=TESTI["ETICHETTA_RIFERIMENTO_ALLINEA"],
+        description=TESTI["AIUTO_RIFERIMENTO_ALLINEA"],
+        items=_voci_riferimento_allinea(),
+        default=configuration.ALLINEA_RIFERIMENTO_PREDEFINITO,
+    )
+    # Guida passo passo in corso: la chiave della guida e il passo mostrato.
+    guida: bpy.props.StringProperty(default="", options={"HIDDEN"})
+    passo_guida: bpy.props.IntProperty(default=0, min=0, options={"HIDDEN"})
     messaggio: bpy.props.StringProperty(default="", options={"HIDDEN"})
     tempo_messaggio: bpy.props.FloatProperty(default=0.0, options={"HIDDEN"})
 
@@ -116,3 +172,32 @@ def messaggio_della_scena(scena, adesso: float | None = None) -> tuple[str, bool
         return "", False
     adesso = time.monotonic() if adesso is None else adesso
     return stato.messaggio, (adesso - float(stato.tempo_messaggio)) < configuration.DURATA_MESSAGGIO
+
+
+def allineamento_della_scena(scena) -> tuple[str, str, bool]:
+    """Asse, bordo e riferimento scelti per Allinea e Spazia, con ripieghi sicuri."""
+    stato = stato_della_scena(scena)
+    if stato is None:
+        return (
+            configuration.ALLINEA_ASSE_PREDEFINITO,
+            configuration.ALLINEA_BORDO_PREDEFINITO,
+            configuration.ALLINEA_RIFERIMENTO_PREDEFINITO == comandi.RIFERIMENTO_PUNTO,
+        )
+    asse = str(getattr(stato, "asse_allinea", configuration.ALLINEA_ASSE_PREDEFINITO)).lower()
+    if asse not in comandi.ASSI:
+        asse = configuration.ALLINEA_ASSE_PREDEFINITO
+    bordo = str(getattr(stato, "bordo_allinea", configuration.ALLINEA_BORDO_PREDEFINITO))
+    if bordo not in comandi.MODI_ALLINEAMENTO:
+        bordo = configuration.ALLINEA_BORDO_PREDEFINITO
+    riferimento = str(
+        getattr(stato, "riferimento_allinea", configuration.ALLINEA_RIFERIMENTO_PREDEFINITO)
+    )
+    return asse, bordo, riferimento == comandi.RIFERIMENTO_PUNTO
+
+
+def guida_della_scena(scena) -> tuple[str, int]:
+    """Chiave della guida in corso e passo mostrato, anche senza stato."""
+    stato = stato_della_scena(scena)
+    if stato is None:
+        return "", 0
+    return str(getattr(stato, "guida", "")), int(getattr(stato, "passo_guida", 0))

@@ -33,10 +33,13 @@ import mathutils  # noqa: E402
 import formafacile_3d as componente  # noqa: E402
 import supporto_finto  # noqa: E402
 from formafacile_3d import comandi, configuration  # noqa: E402
+from formafacile_3d.blender import allineamento  # noqa: E402
+from formafacile_3d.blender import modificatori  # noqa: E402
 from formafacile_3d.blender import oggetti as servizio_oggetti  # noqa: E402
+from formafacile_3d.blender import raccolte  # noqa: E402
 from formafacile_3d.blender import selezione, vista as servizio_vista  # noqa: E402
 from formafacile_3d.localization import TESTI  # noqa: E402
-from formafacile_3d.scene import messaggi, nomi, primitives, stato  # noqa: E402
+from formafacile_3d.scene import guide, messaggi, nomi, primitives, stato  # noqa: E402
 from formafacile_3d.ui import icone, panel, piano as piano_ui, renderer, vista as vista_ui  # noqa: E402
 
 
@@ -200,7 +203,10 @@ def schemi_dei_testi() -> list[re.Pattern]:
     """Espressioni regolari dei testi centrali, con i segnaposto al posto dei valori."""
 
     def schema(valore: str) -> re.Pattern:
-        pezzi = re.split(r"\{[a-z_]+\}", re.escape(valore))
+        # Prima si separano i segnaposto, poi si proteggono i pezzi: proteggere
+        # prima nasconderebbe le graffe e nessun testo con i valori dentro
+        # risulterebbe centralizzato.
+        pezzi = [re.escape(pezzo) for pezzo in re.split(r"\{[a-z_]+\}", valore)]
         return re.compile("^" + ".+?".join(pezzi) + "$", re.DOTALL)
 
     return [schema(valore) for valore in TESTI.values()]
@@ -258,7 +264,7 @@ def prova_registrazione() -> None:
 
     pannelli = classi_registrate(bpy.types.Panel)
     testate = classi_registrate(bpy.types.Header)
-    verifica(len(pannelli) == 4, f"pannelli registrati: {len(pannelli)}")
+    verifica(len(pannelli) == 5, f"pannelli registrati: {len(pannelli)}")
     verifica(len(testate) == 1, "la testata con il pulsante FormaFacile è registrata")
     for classe in (*pannelli, *testate):
         verifica(classe.bl_space_type == "VIEW_3D", f"{classe.__name__} vive nella Vista 3D")
@@ -1460,6 +1466,7 @@ def prova_pannelli() -> None:
         ("principale", panel.FORMAFACILE_PT_principale),
         ("scena", panel.FORMAFACILE_PT_scena),
         ("oggetto", panel.FORMAFACILE_PT_oggetto),
+        ("modella", panel.FORMAFACILE_PT_modella),
     ):
         registro = disegna_pannello(classe)
         verifica(bool(registro), f"il pannello {chiave} disegna contenuti")
@@ -1470,6 +1477,7 @@ def prova_pannelli() -> None:
         (panel.FORMAFACILE_PT_principale, "TITOLO_PANNELLO_PRINCIPALE"),
         (panel.FORMAFACILE_PT_scena, "TITOLO_PANNELLO_SCENA"),
         (panel.FORMAFACILE_PT_oggetto, "TITOLO_PANNELLO_OGGETTO"),
+        (panel.FORMAFACILE_PT_modella, "TITOLO_PANNELLO_MODELLA"),
         (panel.FORMAFACILE_PT_completo, "TITOLO_PANNELLO_COMPLETO"),
     ):
         verifica(
@@ -1904,6 +1912,653 @@ def prova_tabelle() -> None:
 # ------------------------------------------------------------------------- avvio
 
 
+# ------------------------------------------------------------ modellazione
+
+
+def crea_oggetto(idname: str, **parametri: object):
+    """Crea un oggetto con un comando di FormaFacile e restituisce l'attivo."""
+    esegui(idname, **parametri)
+    return bpy.context.view_layer.objects.active
+
+
+def forma_di(oggetto):
+    """Forma valutata dall'oggetto, con i modificatori non applicati."""
+    return modificatori.forma_valutata(bpy.context, oggetto)
+
+
+def prova_strumenti_guidati() -> None:
+    """Gli strumenti guidati danno il risultato promesso o spiegano il rifiuto."""
+    # ------------------------------------------------------------------ smusso
+    azzera_scena()
+    cubo = crea_oggetto(comandi.ID_AGGIUNGI_CUBO)
+    vertici_prima = len(cubo.data.vertices)
+    verifica(
+        esegui(comandi.ID_AMMORBIDISCI_SPIGOLI) == {"FINISHED"},
+        f"lo smusso riesce sul cubo: {messaggio()}",
+    )
+    verifica(
+        [modificatori.tipo_di(m) for m in modificatori.elenca(cubo)] == ["BEVEL"],
+        "lo smusso usa una modifica non applicata",
+    )
+    verifica(testo_centralizzato(messaggio()), f"messaggio dello smusso in italiano: {messaggio()}")
+    verifica(
+        len(cubo.data.vertices) == vertici_prima,
+        "la forma di partenza resta quella creata",
+    )
+    verifica(forma_di(cubo).vertici > vertici_prima, "il risultato ha più vertici di prima")
+
+    azzera_scena()
+    sfera = crea_oggetto(comandi.ID_AGGIUNGI_SFERA)
+    verifica(
+        esegui(comandi.ID_AMMORBIDISCI_SPIGOLI) == {"CANCELLED"},
+        "su una sfera senza spigoli lo smusso è rifiutato",
+    )
+    verifica(not modificatori.elenca(sfera), "rifiutando, non resta nessuna modifica")
+    verifica(
+        messaggio() == TESTI["ERRORE_SENZA_SPIGOLI"],
+        f"la spiegazione dice perché: {messaggio()}",
+    )
+
+    azzera_scena()
+    piano = crea_oggetto(comandi.ID_AGGIUNGI_PIANO)
+    verifica(
+        esegui(comandi.ID_AMMORBIDISCI_SPIGOLI) == {"CANCELLED"},
+        "sul piano aperto lo smusso è rifiutato",
+    )
+    verifica(not modificatori.elenca(piano), "sul piano non resta nessuna modifica")
+
+    azzera_scena()
+    crea_oggetto(comandi.ID_AGGIUNGI_TESTO)
+    verifica(
+        esegui(comandi.ID_AMMORBIDISCI_SPIGOLI) == {"CANCELLED"},
+        "su una scritta lo smusso è rifiutato",
+    )
+    verifica(
+        messaggio() == TESTI["ERRORE_SERVE_FORMA"],
+        f"per le scritte la spiegazione manda a Trasforma in forma: {messaggio()}",
+    )
+
+    azzera_scena()
+    crea_oggetto(comandi.ID_AGGIUNGI_LUCE)
+    verifica(
+        esegui(comandi.ID_AMMORBIDISCI_SPIGOLI) == {"CANCELLED"},
+        "su una luce lo smusso è rifiutato",
+    )
+    verifica(
+        messaggio() == TESTI["ERRORE_SERVE_FORMA_ALTRO"],
+        f"per gli oggetti non-forma la spiegazione è un'altra: {messaggio()}",
+    )
+
+    # --------------------------------------------------------------- superficie
+    azzera_scena()
+    cubo = crea_oggetto(comandi.ID_AGGIUNGI_CUBO)
+    facce_prima = len(cubo.data.polygons)
+    verifica(
+        esegui(comandi.ID_SUPERFICIE_LISCIA) == {"FINISHED"},
+        f"la superficie si mostra liscia: {messaggio()}",
+    )
+    verifica(modificatori.e_liscia(cubo), "dopo il comando la superficie è liscia")
+    verifica(
+        not modificatori.elenca(cubo),
+        "mostrare liscia cambia solo l'aspetto: nessuna modifica da applicare",
+    )
+    verifica(
+        len(cubo.data.polygons) == facce_prima,
+        "mostrare liscia non aggiunge facce alla forma",
+    )
+    verifica(
+        esegui(comandi.ID_SUPERFICIE_A_FACCE) == {"FINISHED"},
+        f"la superficie torna a facce: {messaggio()}",
+    )
+    verifica(not modificatori.e_liscia(cubo), "dopo il comando la superficie è a facce")
+    verifica(
+        esegui(comandi.ID_SUPERFICIE_A_FACCE) == {"FINISHED"},
+        "ripetere lo stesso aspetto non è un errore",
+    )
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_SUPERFICIE_INVARIATA"],
+        f"ripetendo, il comando lo dice invece di fingere: {messaggio()}",
+    )
+
+    # ------------------------------------------------------- forma più arrotondata
+    azzera_scena()
+    cubo = crea_oggetto(comandi.ID_AGGIUNGI_CUBO)
+    verifica(
+        esegui(comandi.ID_FORMA_PIU_LISCIA, livelli=1) == {"FINISHED"},
+        f"la forma diventa più arrotondata: {messaggio()}",
+    )
+    verifica(
+        [modificatori.tipo_di(m) for m in modificatori.elenca(cubo)] == ["SUBSURF"],
+        "l'arrotondamento è una modifica non applicata",
+    )
+    verifica(int(cubo.modifiers[0].levels) == 1, "il livello richiesto è quello applicato")
+    verifica(
+        esegui(comandi.ID_FORMA_PIU_LISCIA, livelli=2) == {"FINISHED"},
+        "si può chiedere una forma più arrotondata",
+    )
+    verifica(
+        len(modificatori.elenca(cubo)) == 1,
+        "chiedere più arrotondato non impila due modifiche",
+    )
+    verifica(int(cubo.modifiers[0].levels) == 2, "il livello sale invece di raddoppiare")
+    verifica(
+        esegui(comandi.ID_FORMA_PIU_LISCIA, livelli=2) == {"FINISHED"},
+        "chiedere lo stesso livello non è un errore",
+    )
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_FORMA_LISCIA_GIA"],
+        f"se la forma è già così, il comando lo dice: {messaggio()}",
+    )
+    verifica(
+        len(cubo.data.vertices) == 8 and len(cubo.data.polygons) == 6,
+        "la forma di partenza resta il cubo di sei facce",
+    )
+    verifica(forma_di(cubo).facce > 6, "il risultato mostra più facce della forma di partenza")
+
+    # ---------------------------------------------------------------- specchio
+    azzera_scena()
+    bpy.context.scene.cursor.location = (0.0, 0.0, 0.0)
+    cubo = crea_oggetto(comandi.ID_AGGIUNGI_CUBO)
+    cubo.location = (1.0, 0.0, 0.0)
+    vertici_prima = forma_di(cubo).vertici
+    verifica(
+        esegui(comandi.ID_SPECCHIA, asse="x") == {"FINISHED"},
+        f"la forma si rispecchia: {messaggio()}",
+    )
+    segnaposto = bpy.data.objects.get(TESTI["NOME_SPECCHIO"])
+    verifica(
+        segnaposto is not None and segnaposto.type == "EMPTY",
+        "il piano dello specchio è un segnaposto visibile nella scena",
+    )
+    verifica(
+        len(modificatori.elenca(cubo)) == 1
+        and modificatori.tipo_di(cubo.modifiers[0]) == "MIRROR",
+        "lo specchio è una modifica non applicata",
+    )
+    verifica(
+        cubo.modifiers[0].mirror_object is segnaposto,
+        "la modifica specchia rispetto al segnaposto, che si può spostare",
+    )
+    verifica(forma_di(cubo).vertici > vertici_prima, "il risultato aggiunge il lato opposto")
+    verifica(
+        round(float(forma_di(cubo).minimo[0]), 3) < -0.5,
+        "il lato nuovo compare dall'altra parte del piano",
+    )
+
+    azzera_scena()
+    cubo = crea_oggetto(comandi.ID_AGGIUNGI_CUBO)
+    verifica(
+        esegui(comandi.ID_SPECCHIA, asse="x") == {"CANCELLED"},
+        "una forma già a cavallo dello specchio non si specchia",
+    )
+    verifica(not modificatori.elenca(cubo), "rifiutando, non resta nessuna modifica")
+    verifica(
+        messaggio() == TESTI["ERRORE_SPECCHIO_SIMMETRICA"],
+        f"la spiegazione dice cosa fare: {messaggio()}",
+    )
+
+    # ------------------------------------------------------------- ripetizione
+    azzera_scena()
+    cubo = crea_oggetto(comandi.ID_AGGIUNGI_CUBO)
+    verifica(
+        esegui(comandi.ID_RIPETI_COPIE, modo="fila", quante=4, distanza=1.0, asse="y")
+        == {"FINISHED"},
+        f"le copie si mettono in fila: {messaggio()}",
+    )
+    verifica(
+        [modificatori.tipo_di(m) for m in modificatori.elenca(cubo)] == ["ARRAY"],
+        "la fila è una modifica non applicata, regolabile dopo",
+    )
+    fila = cubo.modifiers[0]
+    verifica(int(fila.count) == 4, "la fila contiene le forme richieste")
+    verifica(
+        tuple(round(float(v), 3) for v in fila.constant_offset_displace) == (0.0, 1.0, 0.0),
+        "le copie distano quanto richiesto lungo l'asse scelto",
+    )
+    verifica(len(bpy.data.objects) == 1, "la fila resta un oggetto solo")
+
+    azzera_scena()
+    crea_oggetto(comandi.ID_AGGIUNGI_CUBO)
+    verifica(
+        esegui(comandi.ID_RIPETI_COPIE, modo="cerchio", quante=4, distanza=2.0, centro="scena")
+        == {"FINISHED"},
+        f"le copie si mettono in cerchio: {messaggio()}",
+    )
+    verifica(
+        len(bpy.data.objects) == 4,
+        f"il giro crea le copie attorno all'originale: {nomi_scena()}",
+    )
+    distanze = [
+        round(math.hypot(float(o.location[0]), float(o.location[1])), 3)
+        for o in bpy.data.objects
+    ]
+    verifica(
+        len(set(distanze)) == 1 and abs(distanze[0] - 2.0) < 1e-6,
+        f"tutte le forme del giro stanno alla distanza richiesta dal centro: {distanze}",
+    )
+
+    # ------------------------------------------------------------------ spessore
+    azzera_scena()
+    piano = crea_oggetto(comandi.ID_AGGIUNGI_PIANO)
+    verifica(
+        esegui(comandi.ID_SPESSORE_PARETE, spessore=0.2) == {"FINISHED"},
+        f"il piano diventa una parete: {messaggio()}",
+    )
+    verifica(
+        [modificatori.tipo_di(m) for m in modificatori.elenca(piano)] == ["SOLIDIFY"],
+        "lo spessore è una modifica non applicata",
+    )
+    verifica(forma_di(piano).vertici > 4, "il risultato ha due facce invece di una")
+    verifica(
+        round(float(piano.modifiers[0].thickness), 3) == 0.2,
+        "lo spessore richiesto è quello applicato",
+    )
+    verifica(
+        len(piano.data.vertices) == 4,
+        "la superficie di partenza resta quella creata",
+    )
+
+    azzera_scena()
+    crea_oggetto(comandi.ID_AGGIUNGI_CUBO)
+    verifica(
+        esegui(comandi.ID_SPESSORE_PARETE, spessore=0.2) == {"FINISHED"},
+        "anche una forma chiusa accetta lo spessore",
+    )
+    verifica(
+        TESTI["AVVISO_SPESSORE_FORMA_CHIUSA"] in messaggio(),
+        f"su una forma chiusa il comando avvisa: {messaggio()}",
+    )
+
+    # -------------------------------------------------------------- unire e tagliare
+    azzera_scena()
+    cubo = crea_oggetto(comandi.ID_AGGIUNGI_CUBO)
+    sfera = crea_oggetto(comandi.ID_AGGIUNGI_SFERA)
+    sfera.location = (0.7, 0.0, 0.0)
+    esegui(comandi.ID_SCEGLI_TUTTO)
+    bpy.context.view_layer.objects.active = cubo
+    verifica(
+        esegui(comandi.ID_UNISCI_FORME, operazione=comandi.OPERAZIONE_UNIONE) == {"FINISHED"},
+        f"due forme scelte si uniscono: {messaggio()}",
+    )
+    booleana = cubo.modifiers[0]
+    verifica(
+        modificatori.tipo_di(booleana) == "BOOLEAN",
+        "l'unione è una modifica non applicata",
+    )
+    verifica(
+        booleana.object is sfera,
+        "l'oggetto attivo è la forma principale e l'altro è l'attrezzo",
+    )
+    verifica(
+        str(booleana.operation) == comandi.OPERAZIONI_BLENDER[comandi.OPERAZIONE_UNIONE],
+        "l'operazione applicata è quella richiesta",
+    )
+    verifica(
+        not sfera.visible_get() and bool(sfera.hide_viewport),
+        "l'attrezzo resta nella scena ma non si vede",
+    )
+    verifica(sfera.name in nomi_scena(), "l'attrezzo non viene eliminato")
+    verifica(len(cubo.data.polygons) == 6, "la forma principale resta quella creata")
+
+    # Tre forme scelte tutte visibili: il comando non sa quale sarebbe l'attrezzo.
+    azzera_scena()
+    crea_oggetto(comandi.ID_AGGIUNGI_CUBO)
+    crea_oggetto(comandi.ID_AGGIUNGI_SFERA)
+    crea_oggetto(comandi.ID_AGGIUNGI_CONO)
+    esegui(comandi.ID_SCEGLI_TUTTO)
+    verifica(
+        esegui(comandi.ID_UNISCI_FORME) == {"CANCELLED"},
+        "con tre forme scelte l'unione è rifiutata",
+    )
+    verifica(
+        messaggio() == TESTI["ERRORE_UNISCI_TROPPI"],
+        f"la spiegazione dice quante forme servono: {messaggio()}",
+    )
+
+    azzera_scena()
+    cubo = crea_oggetto(comandi.ID_AGGIUNGI_CUBO)
+    piano = crea_oggetto(comandi.ID_AGGIUNGI_PIANO)
+    piano.location = (0.0, 0.0, 0.5)
+    esegui(comandi.ID_SCEGLI_TUTTO)
+    bpy.context.view_layer.objects.active = cubo
+    verifica(
+        esegui(comandi.ID_UNISCI_FORME, operazione=comandi.OPERAZIONE_DIFFERENZA)
+        == {"CANCELLED"},
+        "un piano aperto non può fare da attrezzo per un taglio",
+    )
+    verifica(
+        messaggio() == TESTI["ERRORE_UNISCI_ATTREZZO_APERTO"],
+        f"la spiegazione dice perché: {messaggio()}",
+    )
+    verifica(not modificatori.elenca(cubo), "il taglio rifiutato non lascia modifiche")
+
+    # -------------------------------------------------------------- conversione
+    azzera_scena()
+    scritta = crea_oggetto(comandi.ID_AGGIUNGI_TESTO)
+    verifica(
+        esegui(comandi.ID_CONVERTI_IN_FORMA) == {"FINISHED"},
+        f"una scritta diventa una forma: {messaggio()}",
+    )
+    verifica(scritta.type == "MESH", "dopo il comando l'oggetto è una forma (mesh)")
+    verifica(len(scritta.data.polygons) > 0, "la forma convertita ha facce vere")
+    verifica(
+        esegui(comandi.ID_CONVERTI_IN_FORMA) == {"CANCELLED"},
+        "una forma già pronta non si riconverte",
+    )
+    verifica(
+        messaggio() == TESTI["ERRORE_CONVERTI_NIENTE"],
+        f"la spiegazione lo dice: {messaggio()}",
+    )
+
+    # ------------------------------------------------------ allineare e spaziare
+    azzera_scena()
+    cubi = []
+    for posizione in ((0.0, 0.0, 0.0), (2.0, 0.0, 0.0), (8.0, 0.0, 0.0)):
+        cubo = crea_oggetto(comandi.ID_AGGIUNGI_CUBO)
+        cubo.location = posizione
+        cubi.append(cubo)
+    esegui(comandi.ID_SCEGLI_TUTTO)
+    verifica(esegui(comandi.ID_SPAZIA) == {"FINISHED"}, f"la spaziatura riesce: {messaggio()}")
+    riquadri = allineamento.riquadri(bpy.context, cubi)
+    spazi = [
+        round(float(riquadri[i + 1][0][0]) - float(riquadri[i][1][0]), 3)
+        for i in range(len(riquadri) - 1)
+    ]
+    verifica(
+        len(set(spazi)) == 1 and spazi[0] > 0.0,
+        f"dopo la spaziatura c'è sempre lo stesso spazio fra le forme: {spazi}",
+    )
+
+    bpy.context.scene.formafacile.asse_allinea = "z"
+    bpy.context.scene.formafacile.bordo_allinea = comandi.MODO_ALLINEA_INIZIO
+    for indice, cubo in enumerate(cubi):
+        cubo.location = (float(indice) * 4.0, 0.0, float(indice))
+    verifica(esegui(comandi.ID_ALLINEA) == {"FINISHED"}, f"l'allineamento riesce: {messaggio()}")
+    basi = [
+        round(float(allineamento.riquadri(bpy.context, [cubo])[0][0][2]), 3) for cubo in cubi
+    ]
+    verifica(
+        len(set(basi)) == 1,
+        f"allineando sul bordo di partenza le basi finiscono allo stesso livello: {basi}",
+    )
+
+    esegui(comandi.ID_SCEGLI_OGGETTO, oggetto=cubi[0].name, modo="sostituisci")
+    verifica(
+        esegui(comandi.ID_SPAZIA) == {"CANCELLED"},
+        "con una sola forma scelta non si spazia",
+    )
+    verifica(
+        messaggio() == TESTI["ERRORE_SPAZIA_POCHI"],
+        f"la spiegazione dice quante forme servono: {messaggio()}",
+    )
+
+
+def prova_gruppi() -> None:
+    """I gruppi si scelgono, si nascondono e si sciolgono; le modifiche si tolgono."""
+    azzera_scena()
+    cubo = crea_oggetto(comandi.ID_AGGIUNGI_CUBO)
+    sfera = crea_oggetto(comandi.ID_AGGIUNGI_SFERA)
+    esegui(comandi.ID_SCEGLI_TUTTO)
+
+    nome = TESTI["NOME_CASETTA_GRUPPO"]
+    verifica(esegui(comandi.ID_RAGGRUPPA, nome=nome) == {"FINISHED"}, f"il gruppo nasce: {messaggio()}")
+    gruppi = raccolte.gruppi(bpy.context.scene)
+    verifica(
+        [gruppo.nome for gruppo in gruppi] == [nome],
+        f"il gruppo compare nell'elenco: {[g.nome for g in gruppi]}",
+    )
+    verifica(gruppi[0].quanti == 2, f"il gruppo conta le forme raggruppate: {gruppi[0].quanti}")
+    verifica(
+        raccolte.gruppo_di(cubo) == nome and raccolte.gruppo_di(sfera) == nome,
+        "entrambe le forme sono passate nel gruppo",
+    )
+    verifica(testo_centralizzato(messaggio()), f"messaggio del gruppo in italiano: {messaggio()}")
+
+    esegui(comandi.ID_DESCEGLI_TUTTO)
+    verifica(
+        esegui(comandi.ID_SCEGLI_GRUPPO, gruppo=nome) == {"FINISHED"},
+        f"il gruppo si sceglie tutto insieme: {messaggio()}",
+    )
+    verifica(
+        scelti() == sorted([cubo.name, sfera.name]),
+        f"la scelta del gruppo prende le sue forme: {scelti()}",
+    )
+
+    verifica(
+        esegui(comandi.ID_ALTERNA_GRUPPO, gruppo=nome) == {"FINISHED"},
+        f"il gruppo si nasconde: {messaggio()}",
+    )
+    verifica(
+        not cubo.visible_get() and not sfera.visible_get(),
+        "nascosto, il gruppo non si vede più",
+    )
+    verifica(
+        esegui(comandi.ID_ALTERNA_GRUPPO, gruppo=nome) == {"FINISHED"},
+        "il gruppo si rimostra",
+    )
+    verifica(cubo.visible_get() and sfera.visible_get(), "mostrato, il gruppo si rivede")
+
+    esegui(comandi.ID_SCEGLI_GRUPPO, gruppo=nome)
+    verifica(
+        esegui(comandi.ID_TOGLI_DAL_GRUPPO) == {"FINISHED"},
+        f"le forme escono dal gruppo: {messaggio()}",
+    )
+    verifica(raccolte.gruppo_di(cubo) != nome, "dopo il comando la forma non è più nel gruppo")
+
+    verifica(
+        esegui(comandi.ID_SCEGLI_GRUPPO, gruppo="non-esiste") == {"CANCELLED"},
+        "un gruppo che non esiste non si sceglie",
+    )
+    verifica(
+        messaggio() == TESTI["ERRORE_GRUPPO_ASSENTE"],
+        f"la spiegazione dice che non c'è più: {messaggio()}",
+    )
+
+    # ------------------------------------------- modifiche non applicate nel pannello
+    azzera_scena()
+    cubo = crea_oggetto(comandi.ID_AGGIUNGI_CUBO)
+    esegui(comandi.ID_AMMORBIDISCI_SPIGOLI)
+    esegui(comandi.ID_FORMA_PIU_LISCIA, livelli=1)
+    nomi_elenco = [modificatori.nome_di(m) for m in modificatori.elenca(cubo)]
+    verifica(len(nomi_elenco) == 2, f"il cubo ha due modifiche non applicate: {nomi_elenco}")
+
+    contesto, _risolutore = contesto_interfaccia()
+    verifica(
+        [modifica.chiave for modifica in contesto.modificatori] == nomi_elenco,
+        "il pannello legge le modifiche dell'oggetto attivo",
+    )
+    verifica(
+        all(modifica.parola and modifica.icona for modifica in contesto.modificatori),
+        "ogni modifica ha una parola italiana e un'icona",
+    )
+
+    esegui(comandi.ID_SCEGLI_TUTTO)
+    verifica(
+        esegui(comandi.ID_TOGLI_MODIFICHE, modificatore=nomi_elenco[1]) == {"FINISHED"},
+        f"si può togliere una modifica sola: {messaggio()}",
+    )
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_MODIFICA_TOLTA"],
+        f"togliendo una modifica sola il messaggio è al singolare: {messaggio()}",
+    )
+    verifica(
+        [modificatori.nome_di(m) for m in modificatori.elenca(cubo)] == [nomi_elenco[0]],
+        "è sparita solo la modifica indicata",
+    )
+    verifica(
+        esegui(comandi.ID_TOGLI_MODIFICHE) == {"FINISHED"},
+        f"si tolgono tutte le modifiche rimaste: {messaggio()}",
+    )
+    verifica(not modificatori.elenca(cubo), "dopo il comando non resta nessuna modifica")
+    verifica(
+        esegui(comandi.ID_TOGLI_MODIFICHE) == {"FINISHED"},
+        "togliere quando non c'è nulla non è un errore",
+    )
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_MODIFICHE_NESSUNA"],
+        f"senza modifiche il comando lo dice: {messaggio()}",
+    )
+
+    azzera_scena()
+    creato = crea_oggetto(comandi.ID_AGGIUNGI_CUBO)
+    creato.location = (1.0, 0.0, 0.0)
+    esegui(comandi.ID_SPECCHIA, asse="x")
+    creato.modifiers[0].mirror_object = None
+    contesto, _risolutore = contesto_interfaccia()
+    verifica(
+        bool(contesto.modificatori)
+        and contesto.modificatori[0].problema == TESTI["AVVISO_SPECCHIO_SENZA_CENTRO"],
+        "lo specchio senza segnaposto viene segnalato nel pannello",
+    )
+
+
+def prova_guida() -> None:
+    """La guida della casetta: comandi veri, risultato in piedi, fine ordinata."""
+    azzera_scena()
+    stato_scena = bpy.context.scene.formafacile
+    chiave = configuration.GUIDA_PRINCIPALE
+    corrente = guide.guida(chiave)
+    verifica(
+        corrente is not None and bool(corrente.passi),
+        "la guida della casetta esiste e ha dei passi",
+    )
+
+    verifica(
+        esegui(comandi.ID_GUIDA_APRI, guida=chiave) == {"FINISHED"},
+        f"la guida si apre: {messaggio()}",
+    )
+    verifica(
+        stato_scena.guida == chiave and int(stato_scena.passo_guida) == 0,
+        "la guida parte dal primo passo",
+    )
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_GUIDA_INIZIO"].format(totale=len(corrente.passi)),
+        f"il messaggio dice quanti passi ci sono: {messaggio()}",
+    )
+
+    for indice, passo in enumerate(corrente.passi):
+        verifica(
+            int(stato_scena.passo_guida) == indice,
+            f"prima del passo {indice + 1} l'indice è quello giusto",
+        )
+        verifica(
+            esegui(comandi.ID_GUIDA_ESEGUI) == {"FINISHED"},
+            f"il passo «{TESTI[passo.titolo]}» riesce: {messaggio()}",
+        )
+    verifica(
+        int(stato_scena.passo_guida) == len(corrente.passi),
+        "dopo l'ultimo passo la guida risulta finita",
+    )
+    verifica(
+        messaggio() == TESTI["MESSAGGIO_GUIDA_FINE"],
+        f"a fine guida il messaggio lo dice: {messaggio()}",
+    )
+
+    verifica(
+        esegui(comandi.ID_GUIDA_ESEGUI) == {"CANCELLED"},
+        "una guida finita non esegue altri passi",
+    )
+    verifica(
+        messaggio() == TESTI["ERRORE_GUIDA_FINITA"],
+        f"la spiegazione dice di chiuderla: {messaggio()}",
+    )
+    verifica(
+        len(bpy.data.objects) == 3,
+        f"la scena ha solo le tre forme della casetta, senza doppioni: {nomi_scena()}",
+    )
+
+    corpo = bpy.data.objects.get(TESTI["NOME_CASETTA_CORPO"])
+    tetto = bpy.data.objects.get(TESTI["NOME_CASETTA_TETTO"])
+    camino = bpy.data.objects.get(TESTI["NOME_CASETTA_CAMINO"])
+    for oggetto, nome in ((corpo, "Corpo"), (tetto, "Tetto"), (camino, "Camino")):
+        verifica(oggetto is not None, f"la guida ha creato {nome}")
+        verifica(oggetto.type == "MESH", f"{nome} è una forma")
+
+    verifica(
+        [modificatori.tipo_di(m) for m in modificatori.elenca(corpo)] == ["BOOLEAN"],
+        "il tetto è unito al corpo con una modifica non applicata",
+    )
+    verifica(corpo.modifiers[0].object is tetto, "la modifica unisce il corpo e il tetto")
+    verifica(
+        not tetto.visible_get(),
+        "la forma usata per unire resta nella scena ma non si vede",
+    )
+    verifica(tetto.name in nomi_scena(), "la forma usata per unire non viene eliminata")
+
+    riquadro_corpo = allineamento.riquadri(bpy.context, [corpo])[0]
+    riquadro_tetto = allineamento.riquadri(bpy.context, [tetto])[0]
+    riquadro_camino = allineamento.riquadri(bpy.context, [camino])[0]
+    verifica(
+        round(float(riquadro_corpo[0][2]), 2) == 0.0,
+        f"la casa appoggia sul pavimento: base a {round(float(riquadro_corpo[0][2]), 2)}",
+    )
+    verifica(
+        round(float(riquadro_corpo[1][2]), 3) > round(float(riquadro_tetto[0][2]), 3),
+        "la casa unita è più alta della sola base su cui poggia il tetto",
+    )
+    verifica(
+        float(riquadro_camino[1][2]) > float(riquadro_tetto[0][2]),
+        "il camino arriva sopra la base del tetto, non resta per terra",
+    )
+    verifica(
+        float(riquadro_camino[0][2]) >= 0.0,
+        "il camino non sprofonda sotto il pavimento",
+    )
+
+    gruppi = raccolte.gruppi(bpy.context.scene)
+    verifica(
+        [gruppo.nome for gruppo in gruppi] == [TESTI["NOME_CASETTA_GRUPPO"]],
+        f"alla fine la casetta è un gruppo solo: {[g.nome for g in gruppi]}",
+    )
+    verifica(
+        gruppi[0].quanti == 2,
+        f"il gruppo raccoglie la casa e il camino, non l'attrezzo: {gruppi[0].quanti}",
+    )
+
+    esegui(comandi.ID_GUIDA_NAVIGA, modo=comandi.MODO_GUIDA_INDIETRO)
+    verifica(
+        int(stato_scena.passo_guida) == len(corrente.passi) - 1,
+        "Indietro torna all'ultimo passo, per rileggerlo",
+    )
+    esegui(comandi.ID_GUIDA_NAVIGA, modo=comandi.MODO_GUIDA_AVANTI)
+    verifica(
+        int(stato_scena.passo_guida) == len(corrente.passi),
+        "Avanti riporta a fine guida senza duplicare nulla",
+    )
+
+    registro = disegna_pannello(panel.FORMAFACILE_PT_modella)
+    controlla_registro(registro, "modella (guida finita)")
+    verifica(
+        TESTI["ETICHETTA_GUIDA_FINITA"] in supporto_finto.etichette(registro),
+        "il pannello dice che la guida è arrivata in fondo",
+    )
+    verifica(
+        comandi.ID_GUIDA_ESEGUI not in supporto_finto.comandi(registro),
+        "a guida finita il pannello non propone di eseguire altri passi",
+    )
+
+    verifica(
+        esegui(comandi.ID_GUIDA_NAVIGA, modo=comandi.MODO_GUIDA_CHIUDI) == {"FINISHED"},
+        f"la guida si chiude: {messaggio()}",
+    )
+    verifica(
+        stato_scena.guida == "" and int(stato_scena.passo_guida) == 0,
+        "chiusa la guida, lo stato torna vuoto",
+    )
+    verifica(
+        esegui(comandi.ID_GUIDA_ESEGUI) == {"CANCELLED"},
+        "senza guida aperta non si esegue nessun passo",
+    )
+    verifica(
+        esegui(comandi.ID_GUIDA_APRI, guida="non-esiste") == {"CANCELLED"},
+        "una guida che non esiste non si apre",
+    )
+    verifica(
+        messaggio() == TESTI["ERRORE_GUIDA_ASSENTE"],
+        f"la spiegazione dice che non è disponibile: {messaggio()}",
+    )
+
+
 def main() -> int:
     azzera_scena()
     try:
@@ -1921,6 +2576,9 @@ def main() -> int:
         prova_vista()
         prova_disposizioni()
         prova_pannelli()
+        prova_strumenti_guidati()
+        prova_gruppi()
+        prova_guida()
         prova_testi_dei_comandi()
         prova_messaggi()
         prova_storia()

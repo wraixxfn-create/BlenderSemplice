@@ -104,6 +104,23 @@ barra di stato.
 | 9.1 | Allarga e restringi la barra laterale: i campi numerici restano leggibili e le righe non si spezzano. | ☐ |
 | 9.2 | Ripeti le sezioni 1, 3 e 5 con la barra stretta al minimo. | ☐ |
 
+## 10. Strumenti guidati, gruppi e guida della casetta
+
+| # | Prova | Esito |
+| --- | --- | --- |
+| 10.1 | Con un cubo scelto premi **Ammorbidisci gli spigoli**: compare la finestrella con la spiegazione e i campi essenziali; conferma e guarda gli spigoli arrotondati. | ☐ |
+| 10.2 | Sulla stessa forma premi **Superficie liscia** e poi **Superficie a facce**: cambia solo l'aspetto, il contorno non si muove. | ☐ |
+| 10.3 | Premi **Specchia** e sposta nella vista l'oggetto **Specchio** (un segnaposto vuoto): il lato rispecchiato si sposta con lui. | ☐ |
+| 10.4 | Premi **Ripeti le copie** in fila: le copie sono una serie regolabile; in cerchio: le copie si possono scegliere una per una. | ☐ |
+| 10.5 | Scegli due forme che si sovrappongono e premi **Unisci o taglia** con **Unisci** e poi con **Taglia**: l'attrezzo sparisce dalla vista ma resta nell'elenco. | ☐ |
+| 10.6 | Con una sola forma scelta (o con tre) premi **Unisci o taglia**: compare la spiegazione, non un errore tecnico. | ☐ |
+| 10.7 | Dopo uno degli strumenti premi **Togli le modifiche**: la forma torna esattamente com'era, senza usare `Ctrl+Z`. | ☐ |
+| 10.8 | Scegli tre forme sparse e premi **Spazia in modo uguale**: la distanza fra loro diventa la stessa; cambia **Asse** e **Bordo** e riprova con **Allinea**. | ☐ |
+| 10.9 | Scegli due forme e premi **Raggruppa**: il gruppo compare nell'elenco e con **Scegli il gruppo** si scelgono tutte insieme. | ☐ |
+| 10.10 | Premi **Inizia la guida** e poi **Esegui il passo** tredici volte: la casetta viene costruita e il pannello arriva a **Guida completata** senza proporre altri passi. | ☐ |
+| 10.11 | Durante la guida premi **Indietro** e **Avanti** per rileggere i passi, poi **Chiudi**: la scena resta com'è. | ☐ |
+| 10.12 | Premi **Esegui il passo** con la guida chiusa: compare un avviso in italiano, non un errore tecnico. | ☐ |
+
 ## Riferimenti delle prove automatiche
 
 Le stesse funzionalità sono verificate senza schermo da

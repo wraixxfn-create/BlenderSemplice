@@ -49,6 +49,29 @@ ID_SPOSTA_PASSO = "formafacile.sposta_passo"
 ID_RUOTA_PASSO = "formafacile.ruota_passo"
 ID_SCALA_PASSO = "formafacile.scala_passo"
 
+# Strumenti guidati di modellazione (pannello "Dai forma").
+ID_AMMORBIDISCI_SPIGOLI = "formafacile.ammorbidisci_spigoli"
+ID_SUPERFICIE_LISCIA = "formafacile.superficie_liscia"
+ID_SUPERFICIE_A_FACCE = "formafacile.superficie_a_facce"
+ID_FORMA_PIU_LISCIA = "formafacile.forma_piu_liscia"
+ID_SPECCHIA = "formafacile.specchia"
+ID_RIPETI_COPIE = "formafacile.ripeti_copie"
+ID_SPESSORE_PARETE = "formafacile.spessore_parete"
+ID_UNISCI_FORME = "formafacile.unisci_forme"
+ID_CONVERTI_IN_FORMA = "formafacile.converti_in_forma"
+ID_ALLINEA = "formafacile.allinea"
+ID_SPAZIA = "formafacile.spazia"
+ID_RAGGRUPPA = "formafacile.raggruppa"
+ID_SCEGLI_GRUPPO = "formafacile.scegli_gruppo"
+ID_ALTERNA_GRUPPO = "formafacile.alterna_gruppo"
+ID_TOGLI_DAL_GRUPPO = "formafacile.togli_dal_gruppo"
+ID_TOGLI_MODIFICHE = "formafacile.togli_modifiche"
+
+# Guida passo passo.
+ID_GUIDA_APRI = "formafacile.guida_apri"
+ID_GUIDA_ESEGUI = "formafacile.guida_esegui"
+ID_GUIDA_NAVIGA = "formafacile.guida_naviga"
+
 # Comandi nativi di Blender usati per muovere con il mouse.
 ID_MOUSE_SPOSTA = "transform.translate"
 ID_MOUSE_RUOTA = "transform.rotate"
@@ -132,6 +155,145 @@ ID_FORME = (
     ID_AGGIUNGI_TORO,
     ID_AGGIUNGI_TESTO,
 )
+
+# Assi su cui si specchia o si ripete una forma.
+ASSI = ("x", "y", "z")
+TESTI_ASSE = {"x": "ASSE_X", "y": "ASSE_Y", "z": "ASSE_Z"}
+AIUTI_ASSE = {"x": "AIUTO_ASSE_X", "y": "AIUTO_ASSE_Y", "z": "AIUTO_ASSE_Z"}
+
+# Modi della ripetizione: in fila oppure in cerchio.
+MODO_RIPETI_FILA = "fila"
+MODO_RIPETI_CERCHIO = "cerchio"
+MODI_RIPETIZIONE = (MODO_RIPETI_FILA, MODO_RIPETI_CERCHIO)
+TESTI_RIPETIZIONE = {
+    MODO_RIPETI_FILA: "AZIONE_RIPETI_FILA",
+    MODO_RIPETI_CERCHIO: "AZIONE_RIPETI_CERCHIO",
+}
+AIUTI_RIPETIZIONE = {
+    MODO_RIPETI_FILA: "AIUTO_RIPETI_FILA",
+    MODO_RIPETI_CERCHIO: "AIUTO_RIPETI_CERCHIO",
+}
+
+# Centro del giro: il cursore 3D oppure il centro della scena.
+CENTRO_CURSORE = "cursore"
+CENTRO_SCENA = "scena"
+CENTRI_RIPETIZIONE = (CENTRO_CURSORE, CENTRO_SCENA)
+TESTI_CENTRO = {CENTRO_CURSORE: "AZIONE_CENTRO_CURSORE", CENTRO_SCENA: "AZIONE_CENTRO_SCENA"}
+
+# Verso dello spessore: verso l'interno oppure verso l'esterno della forma.
+VERSO_DENTRO = "dentro"
+VERSO_FUORI = "fuori"
+VERSI_SPESSORE = (VERSO_DENTRO, VERSO_FUORI)
+TESTI_SPESSORE = {VERSO_DENTRO: "AZIONE_SPESSORE_DENTRO", VERSO_FUORI: "AZIONE_SPESSORE_FUORI"}
+
+# Operazioni fra forme: i nomi sono quelli semplici del pannello, i valori
+# tecnici sono quelli accettati da Blender.
+OPERAZIONE_UNIONE = "unione"
+OPERAZIONE_DIFFERENZA = "differenza"
+OPERAZIONE_INTERSEZIONE = "intersezione"
+OPERAZIONI_BOOLEANE = (OPERAZIONE_UNIONE, OPERAZIONE_DIFFERENZA, OPERAZIONE_INTERSEZIONE)
+OPERAZIONI_BLENDER = {
+    OPERAZIONE_UNIONE: "UNION",
+    OPERAZIONE_DIFFERENZA: "DIFFERENCE",
+    OPERAZIONE_INTERSEZIONE: "INTERSECT",
+}
+TESTI_OPERAZIONE = {
+    OPERAZIONE_UNIONE: "AZIONE_UNISCI",
+    OPERAZIONE_DIFFERENZA: "AZIONE_TAGLIA",
+    OPERAZIONE_INTERSEZIONE: "AZIONE_INCROCIA",
+}
+AIUTI_OPERAZIONE = {
+    OPERAZIONE_UNIONE: "AIUTO_UNISCI",
+    OPERAZIONE_DIFFERENZA: "AIUTO_TAGLIA",
+    OPERAZIONE_INTERSEZIONE: "AIUTO_INCROCIA",
+}
+ICONE_OPERAZIONE = {
+    OPERAZIONE_UNIONE: "MOD_BOOLEAN",
+    OPERAZIONE_DIFFERENZA: "MOD_BOOLEAN",
+    OPERAZIONE_INTERSEZIONE: "MOD_BOOLEAN",
+}
+
+# Modi dell'allineamento: dove si attaccano gli oggetti scelti.
+MODO_ALLINEA_INIZIO = "inizio"
+MODO_ALLINEA_CENTRO = "centro"
+MODO_ALLINEA_FINE = "fine"
+MODI_ALLINEAMENTO = (MODO_ALLINEA_INIZIO, MODO_ALLINEA_CENTRO, MODO_ALLINEA_FINE)
+TESTI_ALLINEAMENTO = {
+    MODO_ALLINEA_INIZIO: "AZIONE_ALLINEA_INIZIO",
+    MODO_ALLINEA_CENTRO: "AZIONE_ALLINEA_CENTRO",
+    MODO_ALLINEA_FINE: "AZIONE_ALLINEA_FINE",
+}
+
+# Riferimento dell'allineamento: il bordo della forma oppure il suo punto di
+# riferimento (quello che Blender chiama origine).
+RIFERIMENTO_BORDO = "bordo"
+RIFERIMENTO_PUNTO = "punto"
+RIFERIMENTI_ALLINEAMENTO = (RIFERIMENTO_BORDO, RIFERIMENTO_PUNTO)
+TESTI_RIFERIMENTO = {RIFERIMENTO_BORDO: "AZIONE_RIFERIMENTO_BORDO", RIFERIMENTO_PUNTO: "AZIONE_RIFERIMENTO_PUNTO"}
+
+# Navigazione della guida passo passo.
+MODO_GUIDA_AVANTI = "avanti"
+MODO_GUIDA_INDIETRO = "indietro"
+MODO_GUIDA_CHIUDI = "chiudi"
+MODI_GUIDA = (MODO_GUIDA_AVANTI, MODO_GUIDA_INDIETRO, MODO_GUIDA_CHIUDI)
+TESTI_GUIDA = {
+    MODO_GUIDA_AVANTI: "AZIONE_GUIDA_AVANTI",
+    MODO_GUIDA_INDIETRO: "AZIONE_GUIDA_INDIETRO",
+    MODO_GUIDA_CHIUDI: "AZIONE_GUIDA_CHIUDI",
+}
+
+# Strumenti guidati, nell'ordine in cui compaiono nel pannello: servono ai
+# controlli automatici.
+ID_STRUMENTI_GUIDATI = (
+    ID_AMMORBIDISCI_SPIGOLI,
+    ID_SUPERFICIE_LISCIA,
+    ID_SUPERFICIE_A_FACCE,
+    ID_FORMA_PIU_LISCIA,
+    ID_SPECCHIA,
+    ID_RIPETI_COPIE,
+    ID_SPESSORE_PARETE,
+    ID_UNISCI_FORME,
+    ID_CONVERTI_IN_FORMA,
+    ID_ALLINEA,
+    ID_SPAZIA,
+    ID_RAGGRUPPA,
+    ID_SCEGLI_GRUPPO,
+    ID_ALTERNA_GRUPPO,
+    ID_TOGLI_DAL_GRUPPO,
+    ID_TOGLI_MODIFICHE,
+)
+
+# Comandi della guida, nell'ordine in cui compaiono nel pannello.
+ID_GUIDA = (ID_GUIDA_APRI, ID_GUIDA_ESEGUI, ID_GUIDA_NAVIGA)
+
+# Comandi dei gruppi e delle modifiche non applicate, nell'ordine del pannello.
+ID_GRUPPI = (
+    ID_RAGGRUPPA,
+    ID_SCEGLI_GRUPPO,
+    ID_ALTERNA_GRUPPO,
+    ID_TOGLI_DAL_GRUPPO,
+    ID_TOGLI_MODIFICHE,
+)
+
+# Icona di ogni strumento guidato: sono nomi di icone verificate su Blender.
+ICONE_STRUMENTI_GUIDATI = {
+    ID_AMMORBIDISCI_SPIGOLI: "MOD_BEVEL",
+    ID_SUPERFICIE_LISCIA: "MOD_SMOOTH",
+    ID_SUPERFICIE_A_FACCE: "NORMALS_FACE",
+    ID_FORMA_PIU_LISCIA: "MOD_SUBSURF",
+    ID_SPECCHIA: "MOD_MIRROR",
+    ID_RIPETI_COPIE: "MOD_ARRAY",
+    ID_SPESSORE_PARETE: "MOD_SOLIDIFY",
+    ID_UNISCI_FORME: "MOD_BOOLEAN",
+    ID_CONVERTI_IN_FORMA: "MESH_DATA",
+    ID_ALLINEA: "ALIGN_LEFT",
+    ID_SPAZIA: "SORT_ASC",
+    ID_RAGGRUPPA: "GROUP",
+    ID_SCEGLI_GRUPPO: "OUTLINER_COLLECTION",
+    ID_ALTERNA_GRUPPO: "HIDE_OFF",
+    ID_TOGLI_DAL_GRUPPO: "UNLINKED",
+    ID_TOGLI_MODIFICHE: "MODIFIER",
+}
 
 # Comando nativo richiamato da ogni strumento con le maniglie, e messaggio
 # mostrato quando le frecce sono attive.

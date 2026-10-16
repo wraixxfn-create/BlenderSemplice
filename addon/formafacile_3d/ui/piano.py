@@ -10,7 +10,10 @@ from __future__ import annotations
 
 from .. import comandi, configuration
 from ..localization import TESTI
+from ..scene import guide
 from ..scene import misure
+from ..scene import regole_modellazione as regole
+from ..scene import testi as testi_lunghi
 from . import icone
 from .modello import Azione, Campo, Contesto, Etichetta, Gruppo, Oggetto, Pannello, Riga
 
@@ -21,6 +24,7 @@ def costruisci_piano(contesto: Contesto) -> tuple[Pannello, ...]:
         Pannello("principale", _pannello_principale(contesto)),
         Pannello("scena", _pannello_scena(contesto)),
         Pannello("oggetto", _pannello_oggetto(contesto)),
+        Pannello("modella", _pannello_modella(contesto)),
     ]
     if contesto.modalita == configuration.MODALITA_COMPLETA:
         pannelli.append(Pannello("completo", _pannello_completo(contesto)))
@@ -783,6 +787,336 @@ def _riepilogo_tipi(scelti: tuple[Oggetto, ...]) -> str:
     return ", ".join(parole)
 
 
+# ------------------------------------------------------------------- modella
+# Il pannello "Dai forma": gli strumenti guidati e la guida passo passo.
+# Ogni gruppo è un risultato ("spigoli tondi", "copie", "gruppo"), non un
+# modificatore di Blender: chi inizia cerca il risultato, non lo strumento.
+
+
+def _pannello_modella(contesto: Contesto) -> tuple[Gruppo, ...]:
+    """Strumenti guidati di modellazione e guida passo passo."""
+    gruppi: list[Gruppo] = []
+    scelti = contesto.scelti
+
+    gruppi.append(_testata_modella(contesto))
+    gruppi.append(
+        _gruppo(
+            TESTI["GRUPPO_SPIGOLI"],
+            _riga(
+                _azione_strumento(
+                    comandi.ID_AMMORBIDISCI_SPIGOLI, TESTI["AZIONE_AMMORBIDISCI_SPIGOLI"]
+                ),
+                disabilitata=not scelti,
+            ),
+            _riga(
+                _azione_strumento(comandi.ID_FORMA_PIU_LISCIA, TESTI["AZIONE_FORMA_PIU_LISCIA"]),
+                disabilitata=not scelti,
+            ),
+        )
+    )
+    liscia = bool(contesto.attivo is not None and contesto.attivo.liscio)
+    gruppi.append(
+        _gruppo(
+            TESTI["GRUPPO_ASPETTO"],
+            _riga(Etichetta(TESTI["NOTA_ASPETTO_SUPERFICIE"])),
+            _riga(
+                _azione(
+                    comandi.ID_SUPERFICIE_LISCIA,
+                    TESTI["AZIONE_SUPERFICIE_LISCIA"],
+                    comandi.ICONE_STRUMENTI_GUIDATI[comandi.ID_SUPERFICIE_LISCIA],
+                    premuto=liscia,
+                ),
+                _azione(
+                    comandi.ID_SUPERFICIE_A_FACCE,
+                    TESTI["AZIONE_SUPERFICIE_A_FACCE"],
+                    comandi.ICONE_STRUMENTI_GUIDATI[comandi.ID_SUPERFICIE_A_FACCE],
+                    premuto=not liscia,
+                ),
+                disabilitata=not scelti,
+            ),
+        )
+    )
+    gruppi.append(
+        _gruppo(
+            TESTI["GRUPPO_SPECCHIO"],
+            *_testo_lungo(TESTI["NOTA_SPECCHIO"]),
+            _riga(
+                _azione_strumento(comandi.ID_SPECCHIA, TESTI["AZIONE_SPECCHIA"]),
+                _azione_strumento(comandi.ID_SPESSORE_PARETE, TESTI["AZIONE_SPESSORE_PARETE"]),
+                disabilitata=not scelti,
+            ),
+        )
+    )
+    gruppi.append(
+        _gruppo(
+            TESTI["GRUPPO_COPIE"],
+            _riga(
+                _azione_strumento(comandi.ID_RIPETI_COPIE, TESTI["AZIONE_RIPETI_COPIE"]),
+                disabilitata=not scelti,
+            ),
+        )
+    )
+    gruppi.append(
+        _gruppo(
+            TESTI["GRUPPO_UNISCI"],
+            *_testo_lungo(TESTI["NOTA_UNISCI_SCELTA"]),
+            _riga(
+                _azione_strumento(comandi.ID_UNISCI_FORME, TESTI["AZIONE_UNISCI"]),
+                disabilitata=len(scelti) != configuration.UNISCI_OGGETTI_ESATTI,
+            ),
+            _riga(
+                _azione_strumento(
+                    comandi.ID_CONVERTI_IN_FORMA, TESTI["AZIONE_CONVERTI_IN_FORMA"]
+                ),
+                disabilitata=not _da_trasformare(scelti),
+            ),
+        )
+    )
+    gruppi.append(_gruppo_allinea(contesto, scelti))
+    gruppi.append(_gruppo(TESTI["GRUPPO_GRUPPI"], *_righe_gruppi(contesto)))
+    gruppi.append(_gruppo(TESTI["GRUPPO_MODIFICHE"], *_righe_modifiche(contesto)))
+    gruppi.append(_gruppo(TESTI["GRUPPO_GUIDA"], *_righe_guida(contesto)))
+    return tuple(gruppi)
+
+
+def _testata_modella(contesto: Contesto) -> Gruppo:
+    """Che cosa sta per essere modificato: la forma scelta, oppure nulla."""
+    scelti = contesto.scelti
+    if not scelti:
+        return _gruppo(
+            "",
+            _riga(Etichetta(TESTI["ETICHETTA_MODELLA_NIENTE"], icona="INFO", evidenzia=True)),
+            *_testo_lungo(TESTI["AIUTO_MODELLA_NIENTE"]),
+        )
+    if len(scelti) == 1:
+        return _gruppo(
+            "",
+            _riga(Etichetta(TESTI["ETICHETTA_MODELLA_SCELTA"], evidenzia=True)),
+            _riga(Etichetta(_nome_breve(scelti[0].nome), icona=scelti[0].icona)),
+        )
+    # Più oggetti scelti: gli strumenti lavorano sulla forma attiva, e va detto
+    # invece di lasciar credere che tocchino tutte le forme scelte.
+    return _gruppo(
+        "",
+        _riga(Etichetta(TESTI["ETICHETTA_MODELLA_SCELTI"], evidenzia=True)),
+        *_testo_lungo(TESTI["NOTA_MODELLA_PIU_SCELTI"].format(numero=len(scelti))),
+    )
+
+
+def _gruppo_allinea(contesto: Contesto, scelti: tuple[Oggetto, ...]) -> Gruppo:
+    """Allinea e Spazia, con le loro impostazioni sempre visibili."""
+    righe = [
+        _riga(Etichetta(TESTI["NOTA_ALLINEA"])),
+        _riga(
+            Etichetta(TESTI["ETICHETTA_ASSE_ALLINEA"]),
+            _campo_scena(configuration.CAMPO_ASSE_ALLINEA),
+        ),
+        _riga(
+            Etichetta(TESTI["ETICHETTA_BORDO_ALLINEA"]),
+            _campo_scena(configuration.CAMPO_BORDO_ALLINEA),
+        ),
+    ]
+    if contesto.modalita == configuration.MODALITA_COMPLETA:
+        righe.append(
+            _riga(
+                Etichetta(TESTI["ETICHETTA_RIFERIMENTO_ALLINEA"]),
+                _campo_scena(configuration.CAMPO_RIFERIMENTO_ALLINEA, espanso=False),
+            )
+        )
+    righe.append(
+        _riga(
+            _azione_strumento(comandi.ID_ALLINEA, TESTI["AZIONE_ALLINEA"]),
+            _azione_strumento(comandi.ID_SPAZIA, TESTI["AZIONE_SPAZIA"]),
+            disabilitata=len(scelti) < configuration.ALLINEA_OGGETTI_MINIMI,
+        )
+    )
+    return _gruppo(TESTI["GRUPPO_ALLINEA"], *righe)
+
+
+def _righe_gruppi(contesto: Contesto) -> tuple[Riga, ...]:
+    """Raggruppa, togli dal gruppo e l'elenco dei gruppi con i suoi interruttori."""
+    righe = [
+        _riga(Etichetta(TESTI["NOTA_GRUPPI"])),
+        _riga(
+            _azione_strumento(comandi.ID_RAGGRUPPA, TESTI["AZIONE_RAGGRUPPA"]),
+            _azione_strumento(comandi.ID_TOGLI_DAL_GRUPPO, TESTI["AZIONE_TOGLI_DAL_GRUPPO"]),
+            disabilitata=not contesto.scelti,
+        ),
+    ]
+    if not contesto.raccolte:
+        righe.append(_riga(Etichetta(TESTI["ETICHETTA_GRUPPI_VUOTA"], icona="INFO")))
+        return tuple(righe)
+
+    for raccolta in contesto.raccolte[: configuration.GRUPPO_LIMITE_ELENCO]:
+        righe.append(
+            _riga(
+                Etichetta(
+                    TESTI["ETICHETTA_GRUPPO_RIGA"].format(
+                        nome=_nome_breve(raccolta.nome), numero=raccolta.quanti
+                    ),
+                    icona="OUTLINER_COLLECTION",
+                ),
+                _azione(
+                    comandi.ID_SCEGLI_GRUPPO,
+                    TESTI["AZIONE_SCEGLI_GRUPPO"],
+                    "CHECKMARK",
+                    solo_icona=True,
+                    parametri=(("gruppo", raccolta.chiave),),
+                ),
+                _azione(
+                    comandi.ID_ALTERNA_GRUPPO,
+                    TESTI["AZIONE_ALTERNA_GRUPPO"],
+                    "HIDE_ON" if raccolta.nascosto else "HIDE_OFF",
+                    solo_icona=True,
+                    parametri=(("gruppo", raccolta.chiave),),
+                ),
+            )
+        )
+    if len(contesto.raccolte) > configuration.GRUPPO_LIMITE_ELENCO:
+        righe.append(
+            _riga(
+                Etichetta(
+                    TESTI["ETICHETTA_MANCANO_GRUPPI"].format(totali=len(contesto.raccolte)),
+                    icona="INFO",
+                )
+            )
+        )
+    return tuple(righe)
+
+
+def _righe_modifiche(contesto: Contesto) -> tuple[Riga, ...]:
+    """Elenco delle modifiche non applicate, ognuna con il suo pulsante Togli."""
+    modifiche = contesto.modificatori
+    if not modifiche:
+        return (_riga(Etichetta(TESTI["NOTA_MODIFICHE_NIENTE"], icona="MODIFIER")),)
+
+    righe = [
+        _riga(
+            Etichetta(
+                TESTI["ETICHETTA_MODIFICHE"].format(numero=len(modifiche)), evidenzia=True
+            )
+        ),
+        _riga(Etichetta(TESTI["NOTA_MODIFICHE"])),
+    ]
+    for modifica in modifiche:
+        righe.append(
+            _riga(
+                Etichetta(_nome_breve(modifica.parola), icona=modifica.icona),
+                _azione(
+                    comandi.ID_TOGLI_MODIFICHE,
+                    TESTI["AZIONE_TOGLI_MODIFICA"],
+                    "X",
+                    solo_icona=True,
+                    parametri=(("modificatore", modifica.chiave),),
+                ),
+            )
+        )
+        if modifica.problema:
+            righe.append(_riga(Etichetta(modifica.problema, icona="ERROR", avviso=True)))
+    righe.append(
+        _riga(_azione_strumento(comandi.ID_TOGLI_MODIFICHE, TESTI["AZIONE_TOGLI_MODIFICHE"]))
+    )
+    return tuple(righe)
+
+
+def _righe_guida(contesto: Contesto) -> tuple[Riga, ...]:
+    """La guida passo passo: avvio, passo mostrato e comandi di avanzamento."""
+    avvio = _riga(_azione_strumento(comandi.ID_GUIDA_APRI, TESTI["AZIONE_GUIDA_INIZIA"]))
+    if not contesto.guida:
+        return (
+            _riga(Etichetta(TESTI["NOTA_GUIDA_CASETTA"])),
+            *_testo_lungo(TESTI["AIUTO_GUIDA_OGGETTI"]),
+            avvio,
+        )
+
+    corrente = guide.guida(contesto.guida)
+    if corrente is None or not corrente.passi:
+        return (
+            _riga(Etichetta(TESTI["ERRORE_GUIDA_ASSENTE"], icona="INFO", avviso=True)),
+            avvio,
+        )
+
+    totale = len(corrente.passi)
+    indice = guide.indice_valido(contesto.passo_guida, totale - 1)
+    passo = guide.passo_corrente(contesto.guida, indice)
+    righe = [
+        _riga(
+            Etichetta(
+                TESTI["ETICHETTA_GUIDA_PASSO"].format(numero=indice + 1, totale=totale),
+                icona="BOOKMARKS",
+                evidenzia=True,
+            )
+        )
+    ]
+    if passo is not None:
+        righe.append(_riga(Etichetta(TESTI[passo.titolo], evidenzia=True)))
+        righe.extend(_testo_lungo(TESTI[passo.spiegazione]))
+
+    if guide.completata(contesto.passo_guida, totale):
+        righe.append(
+            _riga(Etichetta(TESTI["ETICHETTA_GUIDA_FINITA"], icona="CHECKMARK", evidenzia=True))
+        )
+    else:
+        righe.append(
+            _riga(_azione_strumento(comandi.ID_GUIDA_ESEGUI, TESTI["AZIONE_GUIDA_ESEGUI"]))
+        )
+    righe.append(
+        _riga(
+            _azione(
+                comandi.ID_GUIDA_NAVIGA,
+                TESTI["AZIONE_GUIDA_AVANTI"],
+                "FORWARD",
+                parametri=(("modo", comandi.MODO_GUIDA_AVANTI),),
+            ),
+            _azione(
+                comandi.ID_GUIDA_NAVIGA,
+                TESTI["AZIONE_GUIDA_INDIETRO"],
+                "BACK",
+                parametri=(("modo", comandi.MODO_GUIDA_INDIETRO),),
+            ),
+            _azione(
+                comandi.ID_GUIDA_NAVIGA,
+                TESTI["AZIONE_GUIDA_CHIUDI"],
+                "X",
+                parametri=(("modo", comandi.MODO_GUIDA_CHIUDI),),
+            ),
+        )
+    )
+    return tuple(righe)
+
+
+def _campo_scena(proprieta: str, *, espanso: bool = True) -> Campo:
+    """Campo collegato a un valore dello stato della scena.
+
+    Le scelte si mostrano come pulsanti (`espanso`): nella modalità semplice
+    una scelta fra due o tre valori si fa con un clic, senza aprire elenchi.
+    """
+    return Campo(
+        riferimento=configuration.RIFERIMENTO_SCENA,
+        chiave=configuration.CHIAVE_SCENA,
+        proprieta=proprieta,
+        espanso=espanso,
+    )
+
+
+def _da_trasformare(scelti: tuple[Oggetto, ...]) -> bool:
+    """Indica se c'è una scritta o una curva da trasformare in una forma."""
+    return any(oggetto.tipo in regole.TIPI_CONVERTIBILI for oggetto in scelti)
+
+
+def _nome_breve(nome: str) -> str:
+    """Nome scritto dall'utente, accorciato per stare nella barra stretta."""
+    return testi_lunghi.accorcia(nome, configuration.LUNGHEZZA_MASSIMA_ETICHETTA - 8)
+
+
+def _testo_lungo(testo: str) -> tuple[Riga, ...]:
+    """Spiegazione su più righe: nella barra stretta le frasi lunghe si tagliano."""
+    return tuple(
+        _riga(Etichetta(riga))
+        for riga in testi_lunghi.righe_di_testo(testo, configuration.LUNGHEZZA_MASSIMA_ETICHETTA)
+    )
+
+
 # ------------------------------------------------------------------ completo
 
 
@@ -936,6 +1270,11 @@ def _azione(
         solo_icona=solo_icona,
         parametri=parametri,
     )
+
+
+def _azione_strumento(idname: str, testo: str) -> Azione:
+    """Pulsante di uno strumento guidato, con l'icona dichiarata nella tabella."""
+    return _azione(idname, testo, comandi.ICONE_STRUMENTI_GUIDATI.get(idname, ""))
 
 
 def _numero_breve(valore: float) -> str:
