@@ -5,14 +5,14 @@ from __future__ import annotations
 import bpy
 
 from . import configuration, operators, scene, ui
-from .blender import vista
+from .blender import rendering, vista
 from .localization import TESTI
 from .logging_service import ottieni_logger
 
 bl_info = {
     "name": TESTI["NOME_ESTENSIONE"],
     "author": TESTI["AUTORE_ESTENSIONE"],
-    "version": (0, 3, 0),
+    "version": (0, 4, 0),
     "blender": (4, 5, 0),
     "location": TESTI["POSIZIONE_ESTENSIONE"],
     "description": TESTI["DESCRIZIONE_ESTENSIONE"],
@@ -47,6 +47,9 @@ def register() -> None:
 
 def _annulla_registrazione() -> None:
     """Rimuove le classi registrate, senza interrompere la disattivazione."""
+    # I segnali di fine disegno appartengono a questa sessione: se il componente
+    # viene spento mentre un'immagine è in corso, non devono restare attivi.
+    rendering.smetti_di_seguire()
     scene.rimuovi_stato()
     for classe in reversed(_CLASSI_REGISTRATE):
         try:

@@ -1,4 +1,4 @@
-# Verifica manuale: vista, maniglie e mouse
+# Verifica manuale: vista, maniglie, aspetto e immagine finale
 
 Questa checklist copre le cose che **non si possono provare senza uno schermo**:
 il disegno dei pannelli nella barra laterale, le maniglie (frecce, archi e
@@ -24,6 +24,31 @@ barra di stato.
 | 1.4 | Il campo **Grandezza** mostra l'unità della scena fra parentesi (per esempio "Grandezza (m)"); scrivi `4` e premi di nuovo **Cubo**: il cubo nuovo è più grande. | ☐ |
 | 1.5 | **Testo** crea una scritta in piedi (leggibile dalla vista iniziale), con il testo di esempio "Testo"; il campo **Scritta** nel pannello la modifica subito. | ☐ |
 | 1.6 | In modalità Modifica (premi `Tab` su un oggetto) i pulsanti di creazione sono disattivati e il pannello invita a tornare con `Tab`. | ☐ |
+
+## 1-bis. Dai un bell'aspetto alla scena
+
+| # | Prova | Esito |
+| --- | --- | --- |
+| A.1 | Con un oggetto scelto, scegli ogni **materiale pronto** e premi **Applica il materiale**: l'anteprima deve mostrare il materiale e il nome applicato deve comparire sotto. | ☐ |
+| A.2 | Cambia un colore dalla **tavolozza**: il pulsante scrive il colore nel campo **Colore** e il nome del colore compare nel messaggio; ripremi **Applica il materiale** e il colore dell'oggetto cambia. | ☐ |
+| A.3 | Con **Vetro** scelto compare il campo **Trasparenza**; con **Plastica opaca** il campo sparisce e compare la spiegazione. | ☐ |
+| A.4 | Metti lo stesso materiale su due oggetti (applicandolo due volte) e cambia il colore su uno solo: l'altro non deve cambiare. | ☐ |
+| A.5 | Apri un file con due oggetti che condividono un materiale (o assegnalo a mano dall'elenco **Materiale** di Blender): il pannello deve avvisare che il materiale è condiviso e **Crea variazione** deve creare un materiale nuovo, lasciando l'altro oggetto com'era. | ☐ |
+| A.6 | **Illuminazione automatica**: compaiono tre luci, la scena è illuminata e la raccolta **Illuminazione** contiene le luci; ripeti con scena vuota e con una scena dieci volte più grande: la luminosità deve restare simile. | ☐ |
+| A.7 | Prova **Prodotto**, **Interno semplice**, **Esterno semplice** e **Studio neutro**: cambiano luci e sfondo, e una luce creata da te con **Luce** resta dov'è. | ☐ |
+| A.8 | Cambia **Colore di sfondo**, **Luminosità dello sfondo**, **Potenza delle luci** e premi **Applica sfondo e intensità**: sfondo e luci seguono i valori, e riportando la potenza a `1` si torna al valore del preset (non si accumula). | ☐ |
+| A.9 | **Aggiungi telecamera**: compare una telecamera scelta, inquadra la scena e diventa quella principale; premi `0` (tastierino) e l'inquadratura deve essere sensata. | ☐ |
+| A.10 | Scegli un oggetto e premi **Inquadra con la telecamera**: la telecamera si avvicina e l'oggetto sta tutto dentro; senza scelta inquadra tutta la scena. | ☐ |
+| A.11 | Sposta la telecamera a mano e premi **Ripristina la telecamera**: torna dov'era. Con una telecamera creata da Blender (non da FormaFacile) il comando deve avvisare che non c'è una posizione iniziale. | ☐ |
+| A.12 | **Centra la vista** con un oggetto scelto: la vista si centra senza cambiare lo zoom e il cursore 3D non si sposta. | ☐ |
+| A.13 | **Vista di lavoro** e **Anteprima dell'immagine**: i due pulsanti si distinguono (uno resta premuto), la scena si vede in due modi diversi e il pannello lo scrive in chiaro. | ☐ |
+| A.14 | **Crea immagine finale** in modalità Semplice con una cartella scelta: Blender mostra l'avanzamento, l'immagine compare nella cartella e il messaggio dice il percorso. | ☐ |
+| A.15 | Durante la creazione premi `Esc`: il lavoro si interrompe, il messaggio dice che nessun file è stato salvato e non resta nessun file a metà. | ☐ |
+| A.16 | Prova le tre qualità con la stessa scena: **Anteprima** deve finire molto prima di **Alta qualità**, e il pannello deve scrivere la grandezza in pixel e i campioni. | ☐ |
+| A.17 | Senza telecamera il pulsante **Crea immagine finale** avvisa che serve una telecamera; con una cartella inesistente (scritta a mano nel campo) avvisa che la cartella non esiste; con la cartella senza permessi di scrittura avvisa che non si può scrivere. | ☐ |
+| A.18 | In modalità Completa compaiono **Risoluzione**, **Campioni**, **Motore** e **Formato**; porta la **Risoluzione** al 400 % di una scena grande: il comando deve fermarsi con il messaggio sulla risoluzione troppo grande invece di far mancare la memoria. | ☐ |
+| A.19 | Con il motore **Cycles** l'immagine deve riuscire; con **EEVEE** su una macchina senza scheda grafica adeguata il messaggio deve essere in italiano e comprensibile (non una traccia tecnica). | ☐ |
+| A.20 | Apri l'immagine creata con un programma esterno: deve essere un'immagine vera, della grandezza scritta nel pannello. | ☐ |
 
 ## 2. Libreria di oggetti
 

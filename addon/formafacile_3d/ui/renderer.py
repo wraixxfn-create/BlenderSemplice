@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from .. import configuration
 from ..localization import TESTI
-from .modello import Azione, Campo, Etichetta, Gruppo, Pannello, Riga
+from .modello import Anteprima, Azione, Campo, Etichetta, Gruppo, Pannello, Riga
 
 
 def disegna_pannello(layout, pannello: Pannello, risolutore: dict[str, object]) -> None:
@@ -38,6 +38,8 @@ def disegna_riga(contenitore, riga: Riga, risolutore: dict[str, object]) -> None
             disegna_azione(blocco, elemento)
         elif isinstance(elemento, Campo):
             disegna_campo(blocco, elemento, risolutore)
+        elif isinstance(elemento, Anteprima):
+            disegna_anteprima(blocco, elemento, risolutore)
         else:
             disegna_etichetta(blocco, elemento)
 
@@ -89,6 +91,24 @@ def disegna_campo(contenitore, campo: Campo, risolutore: dict[str, object]) -> N
         contenitore.prop(datablock, campo.proprieta, **parametri)
     except (TypeError, ValueError, AttributeError, RuntimeError):
         contenitore.label(text=TESTI["ETICHETTA_CAMPO_NON_DISPONIBILE"], icon="ERROR")
+
+
+def disegna_anteprima(contenitore, anteprima: Anteprima, risolutore: dict[str, object]) -> None:
+    """Disegna l'anteprima di un dato di Blender, con ripiego sul testo.
+
+    L'anteprima del materiale è un disegno di Blender (`template_preview`): se
+    il dato non c'è, o se Blender non sa disegnarlo, resta il testo, così il
+    pannello non si rompe e non promette un'anteprima che non c'è.
+    """
+    datablock = risolutore.get(anteprima.chiave)
+    disegna = getattr(contenitore, "template_preview", None)
+    if datablock is None or disegna is None:
+        contenitore.label(text=anteprima.testo, icon="INFO")
+        return
+    try:
+        disegna(datablock)
+    except (TypeError, ValueError, AttributeError, RuntimeError):
+        contenitore.label(text=anteprima.testo, icon="INFO")
 
 
 def disegna_etichetta(contenitore, etichetta: Etichetta) -> None:

@@ -314,6 +314,46 @@ class TestDisegnoARobustezza(unittest.TestCase):
         self.assertEqual(registro, [])
 
 
+class TestAnteprimaDelMateriale(unittest.TestCase):
+    """L'anteprima di un dato di Blender si disegna solo quando il dato c'è."""
+
+    def _disegna(self, risolutore, elemento=None):
+        registro: list[dict] = []
+        blocco = supporto_finto.BloccoFinto(registro)
+        elemento = elemento or modello.Anteprima(
+            chiave="materiale", testo="Anteprima assente"
+        )
+        renderer.disegna_anteprima(blocco, elemento, risolutore)
+        return registro
+
+    def test_senza_dato_resta_il_testo(self):
+        registro = self._disegna({})
+        self.assertEqual([voce["tipo"] for voce in registro], ["etichetta"])
+        self.assertIn("Anteprima assente", supporto_finto.etichette(registro))
+
+    def test_con_il_dato_si_disegna_l_anteprima(self):
+        materiale = object()
+        registro = self._disegna({"materiale": materiale})
+        self.assertEqual([voce["tipo"] for voce in registro], ["anteprima"])
+        self.assertIs(registro[0]["dati"], materiale)
+        self.assertIn("id", registro[0]["parametri"])
+
+    def test_se_il_disegno_fallisce_resta_il_testo(self):
+        class BloccoSenzaAnteprima(supporto_finto.BloccoFinto):
+            def template_preview(self, id, **parametri):  # noqa: A002
+                raise TypeError("Anteprima non disponibile")
+
+        registro: list[dict] = []
+        blocco = BloccoSenzaAnteprima(registro)
+        renderer.disegna_anteprima(
+            blocco,
+            modello.Anteprima(chiave="materiale", testo="Anteprima assente"),
+            {"materiale": object()},
+        )
+        self.assertEqual([voce["tipo"] for voce in registro], ["etichetta"])
+        self.assertIn("Anteprima assente", supporto_finto.etichette(registro))
+
+
 class TestPianoRealeSulDisegno(unittest.TestCase):
     """Il piano di una scena tipica deve diventare un disegno completo."""
 

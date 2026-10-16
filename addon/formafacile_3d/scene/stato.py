@@ -14,7 +14,7 @@ import bpy
 
 from .. import comandi, configuration
 from ..localization import TESTI
-from . import libreria
+from . import aspetto, libreria
 
 
 def _voci_asse_allinea():
@@ -68,6 +68,20 @@ def _aggiorna_preimpostazione_asset(stato, _contesto) -> None:
     """Carica misure di partenza adatte al modello appena selezionato."""
     for nome, valore in _PREIMPOSTAZIONI_ASSET.get(stato.asset_selezionato, {}).items():
         setattr(stato, nome, valore)
+
+
+def _aggiorna_materiale(stato, _contesto) -> None:
+    """Riporta i valori a quelli del materiale appena scelto.
+
+    Colore, ruvidità, metallico e trasparenza cambiano insieme al materiale
+    scelto: evitano che il pannello mostri, per esempio, un vetro con la
+    ruvidità della gomma e faccia applicare qualcosa che non si è scelto.
+    """
+    valori = aspetto.materiale(stato.materiale_scelto)
+    stato.materiale_colore = valori.colore
+    stato.materiale_ruvidita = valori.ruvidita
+    stato.materiale_metallico = valori.metallico
+    stato.materiale_trasparenza = valori.trasparenza
 
 
 class FORMAFACILE_PG_stato(bpy.types.PropertyGroup):
@@ -185,6 +199,111 @@ class FORMAFACILE_PG_stato(bpy.types.PropertyGroup):
         items=_voci_riferimento_allinea(),
         default=configuration.ALLINEA_RIFERIMENTO_PREDEFINITO,
     )
+    # Aspetto della scena: materiale pronto scelto e valori da applicare.
+    # Cambiando materiale i valori si riportano a quelli della ricetta, così il
+    # pannello non mostra mai numeri che non appartengono al materiale scelto.
+    materiale_scelto: bpy.props.EnumProperty(
+        name=TESTI["ETICHETTA_MATERIALE_SCELTO"],
+        description=TESTI["AIUTO_MATERIALE_SCELTO"],
+        items=aspetto.voci_materiali(),
+        default=aspetto.MATERIALE_PREDEFINITO,
+        update=_aggiorna_materiale,
+    )
+    materiale_colore: bpy.props.FloatVectorProperty(
+        name=TESTI["ETICHETTA_COLORE_MATERIALE"],
+        description=TESTI["AIUTO_COLORE_MATERIALE"],
+        subtype="COLOR", size=3, min=0.0, max=1.0,
+        default=aspetto.materiale(aspetto.MATERIALE_PREDEFINITO).colore,
+    )
+    materiale_ruvidita: bpy.props.FloatProperty(
+        name=TESTI["ETICHETTA_RUVIDITA"],
+        description=TESTI["AIUTO_RUVIDITA"],
+        default=aspetto.materiale(aspetto.MATERIALE_PREDEFINITO).ruvidita,
+        min=configuration.MATERIALE_RUVIDITA_MINIMA,
+        max=configuration.MATERIALE_RUVIDITA_MASSIMA,
+        precision=2,
+    )
+    materiale_metallico: bpy.props.FloatProperty(
+        name=TESTI["ETICHETTA_METALLICO"],
+        description=TESTI["AIUTO_METALLICO"],
+        default=aspetto.materiale(aspetto.MATERIALE_PREDEFINITO).metallico,
+        min=configuration.MATERIALE_METALLICO_MINIMO,
+        max=configuration.MATERIALE_METALLICO_MASSIMO,
+        precision=2,
+    )
+    materiale_trasparenza: bpy.props.FloatProperty(
+        name=TESTI["ETICHETTA_TRASPARENZA_MATERIALE"],
+        description=TESTI["AIUTO_TRASPARENZA_MATERIALE"],
+        default=aspetto.materiale(aspetto.MATERIALE_PREDEFINITO).trasparenza,
+        min=configuration.MATERIALE_TRASPARENZA_MINIMA,
+        max=configuration.MATERIALE_TRASPARENZA_MASSIMA,
+        precision=2,
+    )
+    # Illuminazione applicata, sfondo e potenza: l'intensità è un
+    # moltiplicatore, quindi partire da 1 significa "come è stata creata".
+    illuminazione: bpy.props.StringProperty(default="", options={"HIDDEN"})
+    sfondo_colore: bpy.props.FloatVectorProperty(
+        name=TESTI["ETICHETTA_SFONDO_COLORE"],
+        description=TESTI["AIUTO_SFONDO_COLORE"],
+        subtype="COLOR", size=3, min=0.0, max=1.0,
+        default=configuration.SFONDO_COLORE_PREDEFINITO,
+    )
+    sfondo_intensita: bpy.props.FloatProperty(
+        name=TESTI["ETICHETTA_SFONDO_INTENSITA"],
+        description=TESTI["AIUTO_SFONDO_INTENSITA"],
+        default=configuration.SFONDO_INTENSITA_PREDEFINITA,
+        min=configuration.SFONDO_INTENSITA_MINIMA,
+        max=configuration.SFONDO_INTENSITA_MASSIMA,
+        precision=2,
+    )
+    luce_intensita: bpy.props.FloatProperty(
+        name=TESTI["ETICHETTA_LUCE_INTENSITA"],
+        description=TESTI["AIUTO_LUCE_INTENSITA"],
+        default=configuration.INTENSITA_LUCE_PREDEFINITA,
+        min=configuration.INTENSITA_LUCE_MINIMA,
+        max=configuration.INTENSITA_LUCE_MASSIMA,
+        precision=2,
+    )
+    # Immagine finale: qualità, cartella e i valori tecnici della modalità completa.
+    qualita: bpy.props.EnumProperty(
+        name=TESTI["ETICHETTA_QUALITA"],
+        description=TESTI["AIUTO_QUALITA"],
+        items=aspetto.voci_qualita(),
+        default=aspetto.QUALITA_PREDEFINITA,
+    )
+    render_percentuale: bpy.props.IntProperty(
+        name=TESTI["ETICHETTA_RENDER_PERCENTUALE"],
+        description=TESTI["AIUTO_RENDER_PERCENTUALE"],
+        default=aspetto.qualita(aspetto.QUALITA_PREDEFINITA).percentuale,
+        min=configuration.QUALITA_PERCENTUALE_MINIMA,
+        max=configuration.QUALITA_PERCENTUALE_MASSIMA,
+        subtype="PERCENTAGE",
+    )
+    render_campioni: bpy.props.IntProperty(
+        name=TESTI["ETICHETTA_RENDER_CAMPIONI"],
+        description=TESTI["AIUTO_RENDER_CAMPIONI"],
+        default=configuration.CAMPIONI_AUTOMATICI,
+        min=configuration.CAMPIONI_AUTOMATICI,
+        max=configuration.CAMPIONI_MASSIMI,
+    )
+    render_motore: bpy.props.EnumProperty(
+        name=TESTI["ETICHETTA_RENDER_MOTORE"],
+        description=TESTI["AIUTO_RENDER_MOTORE"],
+        items=aspetto.voci_motori(),
+        default=aspetto.MOTORE_PREDEFINITO,
+    )
+    render_formato: bpy.props.EnumProperty(
+        name=TESTI["ETICHETTA_RENDER_FORMATO"],
+        description=TESTI["AIUTO_RENDER_FORMATO"],
+        items=aspetto.voci_formati(),
+        default=aspetto.FORMATO_PREDEFINITO,
+    )
+    cartella_immagine: bpy.props.StringProperty(
+        name=TESTI["ETICHETTA_CARTELLA_IMMAGINE"],
+        description=TESTI["AIUTO_CARTELLA_IMMAGINE"],
+        subtype="DIR_PATH",
+        default="",
+    )
     # Guida passo passo in corso: la chiave della guida e il passo mostrato.
     guida: bpy.props.StringProperty(default="", options={"HIDDEN"})
     passo_guida: bpy.props.IntProperty(default=0, min=0, options={"HIDDEN"})
@@ -282,3 +401,93 @@ def guida_della_scena(scena) -> tuple[str, int]:
     if stato is None:
         return "", 0
     return str(getattr(stato, "guida", "")), int(getattr(stato, "passo_guida", 0))
+
+
+def materiale_della_scena(scena) -> str:
+    """Chiave del materiale pronto scelto nel pannello dell'aspetto."""
+    stato = stato_della_scena(scena)
+    if stato is None:
+        return aspetto.MATERIALE_PREDEFINITO
+    chiave = str(getattr(stato, "materiale_scelto", aspetto.MATERIALE_PREDEFINITO))
+    return chiave if chiave in aspetto.MATERIALI else aspetto.MATERIALE_PREDEFINITO
+
+
+def valori_materiale_della_scena(scena):
+    """Materiale pronto con i valori scritti dall'utente nel pannello.
+
+    È il materiale che verrà creato davvero: si compone qui, una volta sola,
+    così il comando e i controlli automatici leggono gli stessi numeri.
+    """
+    stato = stato_della_scena(scena)
+    if stato is None:
+        return aspetto.materiale(aspetto.MATERIALE_PREDEFINITO)
+    return aspetto.componi(
+        materiale_della_scena(scena),
+        getattr(stato, "materiale_colore", None),
+        getattr(stato, "materiale_ruvidita", None),
+        getattr(stato, "materiale_metallico", None),
+        getattr(stato, "materiale_trasparenza", None),
+    )
+
+
+def ambiente_della_scena(scena) -> tuple[tuple[float, float, float], float, float]:
+    """Colore di sfondo, luminosità dello sfondo e potenza delle luci."""
+    stato = stato_della_scena(scena)
+    if stato is None:
+        return (
+            configuration.SFONDO_COLORE_PREDEFINITO,
+            configuration.SFONDO_INTENSITA_PREDEFINITA,
+            configuration.INTENSITA_LUCE_PREDEFINITA,
+        )
+    colore = tuple(float(valore) for valore in getattr(stato, "sfondo_colore", ()))
+    if len(colore) != 3:
+        colore = configuration.SFONDO_COLORE_PREDEFINITO
+    intensita = aspetto.limita(
+        getattr(stato, "sfondo_intensita", configuration.SFONDO_INTENSITA_PREDEFINITA),
+        configuration.SFONDO_INTENSITA_MINIMA,
+        configuration.SFONDO_INTENSITA_MASSIMA,
+    )
+    luce = aspetto.limita(
+        getattr(stato, "luce_intensita", configuration.INTENSITA_LUCE_PREDEFINITA),
+        configuration.INTENSITA_LUCE_MINIMA,
+        configuration.INTENSITA_LUCE_MASSIMA,
+    )
+    return colore, intensita, luce
+
+
+def illuminazione_della_scena(scena) -> str:
+    """Chiave dell'ultima illuminazione applicata da FormaFacile."""
+    stato = stato_della_scena(scena)
+    if stato is None:
+        return ""
+    return str(getattr(stato, "illuminazione", ""))
+
+
+def immagine_della_scena(scena) -> tuple[str, int, int, str, str]:
+    """Qualità, percentuale, campioni, motore e formato dell'immagine finale."""
+    stato = stato_della_scena(scena)
+    if stato is None:
+        qualita = aspetto.qualita(aspetto.QUALITA_PREDEFINITA)
+        return (
+            qualita.chiave,
+            qualita.percentuale,
+            configuration.CAMPIONI_AUTOMATICI,
+            aspetto.MOTORE_PREDEFINITO,
+            aspetto.FORMATO_PREDEFINITO,
+        )
+    qualita = aspetto.qualita(str(getattr(stato, "qualita", aspetto.QUALITA_PREDEFINITA)))
+    return (
+        qualita.chiave,
+        int(getattr(stato, "render_percentuale", qualita.percentuale)),
+        int(getattr(stato, "render_campioni", configuration.CAMPIONI_AUTOMATICI)),
+        str(getattr(stato, "render_motore", aspetto.MOTORE_PREDEFINITO)),
+        str(getattr(stato, "render_formato", aspetto.FORMATO_PREDEFINITO)),
+    )
+
+
+def cartella_della_scena(scena) -> str:
+    """Cartella scelta per l'immagine finale, ripulita dagli spazi esterni."""
+    stato = stato_della_scena(scena)
+    if stato is None:
+        return ""
+    return str(getattr(stato, "cartella_immagine", "")).strip()

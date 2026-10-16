@@ -1,6 +1,6 @@
 """Pannelli di FormaFacile nella barra laterale della Vista 3D.
 
-I pannelli sono cinque in modalità Semplice e sei in modalità Completa; seguono
+I pannelli sono sei in modalità Semplice e sette in modalità Completa; seguono
 il risultato che l'utente vuole ottenere, non la struttura interna di Blender:
 
 * Azioni principali: costruisci, guarda la scena, annulla e ripeti;
@@ -8,6 +8,7 @@ il risultato che l'utente vuole ottenere, non la struttura interna di Blender:
 * Libreria di oggetti: descrizioni, parametri e modelli geometrici;
 * Oggetto scelto: comandi che cambiano in base alla scelta;
 * Dai forma: strumenti guidati e guida passo passo per rifinire le forme;
+* Dai un bell'aspetto alla scena: materiali, luci, telecamera e immagine finale;
 * Comandi di Blender: solo nella modalità completa.
 """
 
@@ -94,13 +95,23 @@ class FORMAFACILE_PT_modella(_PannelloFormaFacile):
     chiave_piano = "modella"
 
 
+class FORMAFACILE_PT_aspetto(_PannelloFormaFacile):
+    """Materiali, luci, telecamera e immagine finale: la scena bella da vedere."""
+
+    bl_label = TESTI["TITOLO_PANNELLO_ASPETTO"]
+    bl_idname = "FORMAFACILE_PT_aspetto"
+    bl_parent_id = "FORMAFACILE_PT_principale"
+    bl_order = 5
+    chiave_piano = "aspetto"
+
+
 class FORMAFACILE_PT_completo(_PannelloFormaFacile):
     """Comandi tecnici di Blender, visibili solo nella modalità completa."""
 
     bl_label = TESTI["TITOLO_PANNELLO_COMPLETO"]
     bl_idname = "FORMAFACILE_PT_completo"
     bl_parent_id = "FORMAFACILE_PT_principale"
-    bl_order = 5
+    bl_order = 6
     bl_options = {"DEFAULT_CLOSED"}
     chiave_piano = "completo"
 
@@ -134,6 +145,7 @@ CLASSI = (
     FORMAFACILE_PT_libreria,
     FORMAFACILE_PT_oggetto,
     FORMAFACILE_PT_modella,
+    FORMAFACILE_PT_aspetto,
     FORMAFACILE_PT_completo,
     FORMAFACILE_HT_barra,
 )

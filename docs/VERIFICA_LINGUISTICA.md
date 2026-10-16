@@ -6,7 +6,7 @@ La risorsa `addon/formafacile_3d/localization.py` contiene tutti i testi visibil
 suggerimenti dei comandi, titoli dei pannelli, messaggi di stato, avvisi di errore, testi del
 programma di avvio e dei controlli. I moduli dei pannelli e degli operatori non contengono etichette
 scritte a mano. Il numero di testi centrali è controllato dalle prove e cresce con le funzioni: nella
-versione attuale sono oltre 300.
+versione attuale sono 909.
 
 La revisione dei termini — quali parole tecniche sono state sostituite da parole italiane più
 semplici, quali restano e perché — è in `docs/REVISIONE_UX.md`.
@@ -33,7 +33,7 @@ Che cosa viene controllato:
   oggetto) puntano a chiavi esistenti;
 - **lunghezza**: le etichette e i pulsanti rispettano i limiti pensati per la barra laterale
   (`LUNGHEZZA_MASSIMA_ETICHETTA`, `LUNGHEZZA_MASSIMA_AZIONE`, `LUNGHEZZA_MASSIMA_AZIONE_SINGOLA`);
-- **disegno vero**: dentro `bpy` le prove disegnano i sei pannelli (cinque in modalità Semplice) sui dati reali della scena e
+- **disegno vero**: dentro `bpy` le prove disegnano i sette pannelli (sei in modalità Semplice) sui dati reali della scena e
   controllano che ogni testo disegnato sia italiano e che ogni icona usata sia fra quelle verificate.
 
 Il controllo automatico è un filtro, non una prova completa della qualità linguistica.
@@ -42,7 +42,7 @@ Il controllo automatico è un filtro, non una prova completa della qualità ling
 
 Quando Blender 4.5.x è disponibile, controllare:
 
-- i cinque pannelli semplici e il sesto pannello tecnico della scheda **FormaFacile** in Vista 3D, con il pulsante nella testata;
+- i sei pannelli semplici e il settimo pannello tecnico della scheda **FormaFacile** in Vista 3D, con il pulsante nella testata;
 - i suggerimenti che compaiono passando il mouse su ogni pulsante;
 - i messaggi che seguono le azioni: "Aggiunto: Cubo", "Nome cambiato in Albero", "Nascosto: Sfera",
   "Vista su Albero.", "Non ci sono oggetti visibili da scegliere.", "Scelto e di nuovo visibile: …";

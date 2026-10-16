@@ -109,6 +109,29 @@ quando una semplificazione darebbe fastidio a una funzione importante. Qui la sc
    scrive ("Mostrati 12 di 16 oggetti: usa Cerca."), così il pannello non diventa lento né
    inutilizzabile.
 
+## Parole scelte per l'aspetto della scena e l'immagine finale
+
+| Termine tecnico | Parola usata nel pannello | Perché |
+| --- | --- | --- |
+| Materiale di esempio / preset | **Materiale pronto** | Dice che è già configurato e che non serve sapere che cos'è un nodo. |
+| Base Color | **Colore** | Il colore si vede: non serve il nome tecnico dell'ingresso. |
+| Roughness | **Ruvidità** | Parola italiana comune, con il suggerimento che spiega i due estremi. |
+| Metallic | **Metallico** | Aggettivo italiano; il suggerimento dice che cosa cambia. |
+| Transmission / Alpha | **Trasparenza** | Una parola sola per due dati tecnici, spiegata dal suggerimento. |
+| HDRI / Environment | **Colore di sfondo** e **Luminosità dello sfondo** | Si sceglie un colore e quanto illumina, non un'immagine da scaricare. |
+| Light / Sun / Area Light | **Luce**, **Sole**, **Luce dal soffitto**, **Luce dalla finestra** | I nomi delle luci dei preset dicono da dove arrivano. |
+| Nome del comando di Blender per creare l'immagine | **Immagine finale** | È quello che l'utente vuole ottenere: un'immagine. La parola inglese resta solo nel codice e nei nomi dei comandi nativi. |
+| Samples | **Campioni** | Parola italiana del linguaggio tecnico, mostrata solo in modalità Completa con la spiegazione. |
+| Resolution % | **Risoluzione** | Con il simbolo di percentuale di Blender accanto al campo. |
+| Engine | **Motore** | Parola italiana, spiegata dai nomi **Come in Blender**, **EEVEE (veloce)**, **Cycles (preciso)**. |
+| File Format | **Formato** | Con i nomi **PNG** e **JPEG**, che sono nomi propri di formato. |
+| Denoise | (non mostrato) | Il disturbo si toglie da solo con la qualità scelta: non è una scelta da principianti. |
+| Working viewport / Rendered preview | **Vista di lavoro** e **Anteprima dell'immagine** | I due pulsanti si escludono a vicenda e il pannello scrive che cosa si sta guardando. |
+
+I nomi dei motori (**EEVEE**, **Cycles**), dei formati (**PNG**, **JPEG**) e delle funzioni della
+tastiera (`Esc`) restano come sono: sono nomi propri di Blender e tradurli confonderebbe chi cerca la
+stessa voce altrove.
+
 ## Termini inglesi ancora presenti nel codice (non nell'interfaccia)
 
 Restano in inglese solo i nomi interni che Blender stesso usa e che l'utente non vede:
@@ -134,7 +157,7 @@ Nessun controllo automatico può guardare uno schermo. La checklist completa, di
 argomento, sta in `docs/VERIFICA_MANUALE.md`. In sintesi, in Blender 4.5.x grafico vanno ancora
 provati a mano:
 
-1. la scheda **FormaFacile** nella barra laterale, con i cinque pannelli semplici e il pannello tecnico visibile solo in modalità Completa;
+1. la scheda **FormaFacile** nella barra laterale, con i sei pannelli semplici e il pannello tecnico visibile solo in modalità Completa;
 2. il passaggio fra **Semplice** e **Completa** e la chiusura del pannello tecnico;
 3. il passaggio del mouse sui pulsanti per leggere i suggerimenti;
 4. `Ctrl+Z` e `Ctrl+Maiusc+Z` dopo una creazione, una rinomina e un nascondimento;
@@ -144,4 +167,8 @@ provati a mano:
    vista iniziale in una disposizione che non ha una Vista 3D (deve comparire l'avviso, non un
    errore);
 8. un oggetto nascosto scelto dall'elenco **di Blender** (Outliner) mentre è nascosto: in quel caso
-   il pannello contestuale deve spiegare che l'oggetto è nascosto e proporre **Mostra**.
+   il pannello contestuale deve spiegare che l'oggetto è nascosto e proporre **Mostra**;
+9. l'anteprima del materiale dentro il pannello (disegnata da Blender), il vetro visto in **Anteprima
+   dell'immagine** e la differenza a colpo d'occhio fra **Vista di lavoro** e **Anteprima**;
+10. la creazione dell'immagine finale dalla finestra, con l'avanzamento di Blender, l'interruzione con
+    `Esc` e il messaggio di fine lavoro nella barra di stato.

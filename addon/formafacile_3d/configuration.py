@@ -128,6 +128,76 @@ GRUPPO_OGGETTI_MINIMI = 1
 # Guida passo passo.
 GUIDA_PRINCIPALE = "casetta"
 
+# Materiali pronti: i valori sono limiti fisici del nodo principale di Blender,
+# quindi il pannello non può chiedere qualcosa che Blender non sappia fare.
+MATERIALE_RUVIDITA_MINIMA = 0.0
+MATERIALE_RUVIDITA_MASSIMA = 1.0
+MATERIALE_METALLICO_MINIMO = 0.0
+MATERIALE_METALLICO_MASSIMO = 1.0
+MATERIALE_TRASPARENZA_MINIMA = 0.0
+MATERIALE_TRASPARENZA_MASSIMA = 1.0
+# Sopra questa trasparenza il materiale è considerato di vetro e riceve anche
+# le impostazioni di rifrazione, altrimenti in anteprima sembrerebbe una lastra
+# opaca.
+MATERIALE_TRASPARENZA_VETRO = 0.90
+
+# Nomi delle proprietà salvate da FormaFacile sui dati di Blender: servono a
+# riconoscere le luci create dall'estensione senza toccare quelle dell'utente.
+CHIAVE_MARCATORE_LUCI = "formafacile_illuminazione"
+CHIAVE_ENERGIA_BASE = "formafacile_energia_base"
+CHIAVE_TELECAMERA_INIZIALE = "formafacile_telecamera_iniziale"
+# Ricetta di partenza scritta sui materiali creati da FormaFacile: serve a
+# riconoscerli senza fidarsi del nome, che l'utente può cambiare.
+CHIAVE_MATERIALE_RICETTA = "formafacile_materiale"
+
+# Illuminazione: l'intensità è un moltiplicatore delle luci create da
+# FormaFacile, non un valore assoluto: cambiandola non si perde la regolazione
+# del preset, che resta il punto di partenza.
+INTENSITA_LUCE_PREDEFINITA = 1.0
+INTENSITA_LUCE_MINIMA = 0.10
+INTENSITA_LUCE_MASSIMA = 5.00
+SFONDO_INTENSITA_PREDEFINITA = 0.40
+SFONDO_INTENSITA_MINIMA = 0.00
+SFONDO_INTENSITA_MASSIMA = 2.00
+# Colore di sfondo usato quando la scena non ha ancora un fondale suo.
+SFONDO_COLORE_PREDEFINITO = (0.38, 0.39, 0.41)
+# Le luci create restano in questa raccolta, così si riconoscono e si
+# sostituiscono quando si sceglie un'altra illuminazione.
+NOME_RACCOLTA_ILLUMINAZIONE = "Illuminazione"
+
+# Telecamera: distanza di ripiego quando la scena è vuota e quanto alzare la
+# telecamera rispetto al centro della scena.
+TELECAMERA_ALTEZZA_RAPPORTO = 0.35
+TELECAMERA_ANGOLO_GRADI = 35.0
+
+# Vista di lavoro e anteprima render: sono i due modi di guardare la scena.
+OMBREGGIATURA_LAVORO = "SOLID"
+OMBREGGIATURA_ANTEPRIMA = "RENDERED"
+
+# Immagine finale: valori prudenti, pensati per un computer normale. La stima
+# della memoria tiene conto delle copie che Blender crea durante il disegno.
+BYTE_PER_PIXEL_STIMA = 64
+MEMORIA_RISERVA_FATTORE = 0.60
+MEMORIA_MINIMA_MB = 400.0
+SPAZIO_MINIMO_MB = 64.0
+# Oltre questo numero di pixel la creazione dell'immagine viene rifiutata con
+# una spiegazione, invece di provare e far mancare la memoria a metà lavoro.
+PIXEL_MASSIMI_IMMAGINE = 33_500_000
+QUALITA_PERCENTUALE_MINIMA = 10
+QUALITA_PERCENTUALE_MASSIMA = 100
+CAMPIONI_MINIMI = 1
+CAMPIONI_MASSIMI = 512
+# Con zero campioni si usano quelli consigliati dalla qualità scelta: il campo
+# avanzato non obbliga a sapere quanti campioni servono.
+CAMPIONI_AUTOMATICI = 0
+# Prefisso del file creato nella cartella scelta dall'utente.
+IMMAGINE_ESTENSIONI_AMMESSE = (".png", ".jpg", ".jpeg")
+# Quante volte ricontrollare il file appena creato e quanto aspettare fra un
+# controllo e l'altro: su un disco lento la scrittura può non essere ancora
+# visibile quando Blender segnala la fine del disegno.
+TENTATIVI_ESITO = 3
+PAUSA_ESITO = 0.5
+
 # Dimensioni dell'elenco oggetti: evita pannelli lentissimi con scene grandi.
 LIMITE_ELENCO_SEMPLICE = 12
 LIMITE_ELENCO_COMPLETA = 24
@@ -164,6 +234,28 @@ CAMPO_BORDO_ALLINEA = "formafacile.bordo_allinea"
 CAMPO_RIFERIMENTO_ALLINEA = "formafacile.riferimento_allinea"
 CAMPO_MESSAGGIO = "formafacile.messaggio"
 CAMPO_TEMPO_MESSAGGIO = "formafacile.tempo_messaggio"
+
+# Campi del pannello "Dai un bell'aspetto alla scena". I nomi sono lunghi di
+# proposito: sono proprietà della scena e compaiono anche nei file salvati.
+CAMPO_MATERIALE_SCELTO = "formafacile.materiale_scelto"
+CAMPO_MATERIALE_COLORE = "formafacile.materiale_colore"
+CAMPO_MATERIALE_RUVIDITA = "formafacile.materiale_ruvidita"
+CAMPO_MATERIALE_METALLICO = "formafacile.materiale_metallico"
+CAMPO_MATERIALE_TRASPARENZA = "formafacile.materiale_trasparenza"
+CAMPO_ILLUMINAZIONE = "formafacile.illuminazione"
+CAMPO_SFONDO_COLORE = "formafacile.sfondo_colore"
+CAMPO_SFONDO_INTENSITA = "formafacile.sfondo_intensita"
+CAMPO_LUCE_INTENSITA = "formafacile.luce_intensita"
+CAMPO_QUALITA = "formafacile.qualita"
+CAMPO_RENDER_PERCENTUALE = "formafacile.render_percentuale"
+CAMPO_RENDER_CAMPIONI = "formafacile.render_campioni"
+CAMPO_RENDER_MOTORE = "formafacile.render_motore"
+CAMPO_RENDER_FORMATO = "formafacile.render_formato"
+CAMPO_CARTELLA_IMMAGINE = "formafacile.cartella_immagine"
+
+# Chiave con cui il materiale dell'oggetto attivo entra nel risolutore dei dati:
+# serve all'anteprima che Blender disegna dentro il pannello.
+CHIAVE_MATERIALE = "materiale_attivo"
 
 # Limiti di comodo per i testi: la barra laterale è stretta.
 # I pulsanti che stanno da soli nella loro riga possono essere più lunghi.

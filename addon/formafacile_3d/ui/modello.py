@@ -54,7 +54,20 @@ class Etichetta:
     evidenzia: bool = False
 
 
-Elemento = Union[Azione, Campo, Etichetta]
+@dataclass(frozen=True)
+class Anteprima:
+    """Anteprima di un dato di Blender (il materiale scelto).
+
+    Blender sa disegnare l'anteprima di un materiale: è l'unico modo per far
+    vedere davvero come apparirà la superficie senza creare l'immagine finale.
+    Se il dato non è disponibile, al suo posto compare un testo.
+    """
+
+    chiave: str
+    testo: str
+
+
+Elemento = Union[Azione, Anteprima, Campo, Etichetta]
 
 
 @dataclass(frozen=True)
@@ -178,6 +191,33 @@ class Contesto:
     # Modello scelto nella libreria e descrizione mostrata prima dell'inserimento.
     asset_selezionato: str = "tavolino"
     asset_descrizione: str = ""
+
+    # Aspetto della scena: materiale pronto scelto, nome del materiale già
+    # applicato all'oggetto attivo e se con quel materiale la trasparenza ha
+    # senso. Sono i tre dati che cambiano davvero il disegno del pannello.
+    materiale: str = ""
+    materiale_applicato: str = ""
+    materiale_condiviso: int = 0
+    # Qualità scelta per l'immagine finale.
+    qualita: str = "standard"
+    # Illuminazione creata da FormaFacile e numero di luci.
+    illuminazione: str = ""
+    illuminazione_luci: int = 0
+    # Telecamera principale, se c'è.
+    telecamera: str = ""
+    # Modo di guardare la scena: anteprima dell'immagine oppure vista di lavoro.
+    anteprima_immagine: bool = False
+    # Grandezza dell'immagine finale, in parole: larghezza, altezza e campioni.
+    immagine_larghezza: int = 0
+    immagine_altezza: int = 0
+    immagine_campioni: int = 0
+
+    @property
+    def trasparenza_disponibile(self) -> bool:
+        """Indica se con il materiale scelto la trasparenza si può regolare."""
+        from ..scene import aspetto
+
+        return aspetto.materiale(self.materiale).trasparenza_disponibile
 
     # Campi derivati, calcolati una volta sola.
     elenco: tuple[Oggetto, ...] = field(default=(), repr=False)
