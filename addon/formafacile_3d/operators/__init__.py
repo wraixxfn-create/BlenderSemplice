@@ -1,5 +1,13 @@
-"""Operatori reali di FormaFacile 3D."""
+"""Pacchetto dei comandi di FormaFacile 3D."""
 
-from .scene import FORMAFACILE_OT_aggiungi_cubo
+from __future__ import annotations
 
-CLASSI = (FORMAFACILE_OT_aggiungi_cubo,)
+from . import oggetti, scene, selezione, trasformazioni, vista
+
+CLASSI = (
+    *scene.CLASSI,
+    *selezione.CLASSI,
+    *oggetti.CLASSI,
+    *trasformazioni.CLASSI,
+    *vista.CLASSI,
+)
