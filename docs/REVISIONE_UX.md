@@ -43,6 +43,13 @@ nomi di funzioni.
 | `Undo History`, `Redo` | **Annulla**, **Ripeti** (con il promemoria `Ctrl+Z` e `Ctrl+Maiusc+Z` nei suggerimenti) | due parole già italiane e già usate da ogni programma |
 | `Mesh data`, `Object data`, `energy`, `location`, `rotation_mode`, `scale`, `display_type`, `hide_select`, `hide_render` | **Geometria di …**, **Dati dell'oggetto**, **Potenza**, **Posizione**, **Modo di rotazione**, **Rotazione**, **Dimensione**, **Aspetto**, **Blocca la scelta**, **Nascondi nell'immagine finale** | sono i nomi dei campi del pannello avanzato: restano tradotti perché anche lì la parola descrive il risultato |
 | `Item` (scheda laterale di Blender) | **le schede di Blender** | il nome della scheda cambia con la traduzione installata: meglio non citarlo |
+| `Bevel` | **Ammorbidisci gli spigoli** | dice l'effetto su una forma di tutti i giorni; "smusso" e "bevel" non aiutano chi comincia |
+| `Shade Smooth`, `Shade Flat`, `Subdivision Surface` | **Superficie liscia**, **Superficie a facce**, **Forma più arrotondata** | distingue l'aspetto (illuminazione) dall'aggiunta di geometria, che è la confusione più frequente |
+| `Mirror` | **Specchia**, con il segnaposto **Specchio** | verbo italiano; il piano è un oggetto che si vede e si sposta, non un numero da ricordare |
+| `Array` | **Ripeti le copie** in **fila** o in **cerchio**, con **Quante copie** e **Distanza** | "array" è gergo di programmazione |
+| `Solidify` | **Spessore della parete** | descrive il risultato su una superficie sottile |
+| `Boolean` con `Difference`, `Union`, `Intersect` | **Unisci o taglia**, con **forma principale** e **attrezzo** | toglie "booleana", "differenza" e "intersezione" dalla scelta e dice chi fa cosa |
+| `Modifier`, `Apply` | **modifica** (non applicata) e **Togli le modifiche** | si toglie una modifica invece di applicarla: la forma di partenza resta sempre disponibile |
 | `Workspace`, `Screen`, `Area` | **disposizione dei pannelli** | compare solo nella documentazione, dove "spazio di lavoro" sarebbe ambiguo con il nostro "spazio di lavoro per principianti" |
 
 ## Parole tecniche che restano, e perché
@@ -125,7 +132,7 @@ Nessun controllo automatico può guardare uno schermo. La checklist completa, di
 argomento, sta in `docs/VERIFICA_MANUALE.md`. In sintesi, in Blender 4.5.x grafico vanno ancora
 provati a mano:
 
-1. la scheda **FormaFacile** nella barra laterale, con i suoi quattro pannelli;
+1. la scheda **FormaFacile** nella barra laterale, con i suoi cinque pannelli;
 2. il passaggio fra **Semplice** e **Completa** e la chiusura del pannello tecnico;
 3. il passaggio del mouse sui pulsanti per leggere i suggerimenti;
 4. `Ctrl+Z` e `Ctrl+Maiusc+Z` dopo una creazione, una rinomina e un nascondimento;

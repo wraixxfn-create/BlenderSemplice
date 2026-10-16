@@ -44,13 +44,43 @@ ancora provato a mano.
 - **Torna alla vista iniziale**, **Inquadra tutto**, **Annulla**, **Ripeti**.
 - Modalità **Semplice** e **Completa**; messaggi brevi in italiano nel pannello e nella barra di
   stato; suggerimenti (descrizioni dei comandi) presi dalla mappa centrale dei testi.
+- Strumenti guidati nel pannello **Dai forma**: **Ammorbidisci gli spigoli** (smusso con forza e
+  segmenti), **Superficie liscia** e **Superficie a facce** (cambiano solo l'aspetto, senza aggiungere
+  facce), **Forma più arrotondata** (suddivisione a livelli, riusando un solo modificatore),
+  **Specchia** (modificatore specchio con il piano segnato dal segnaposto **Specchio**),
+  **Ripeti le copie** (in fila con una serie regolabile, in cerchio con copie vere attorno al cursore
+  3D o al centro della scena), **Spessore della parete**, **Unisci o taglia** (unione, differenza e
+  intersezione fra due forme) e **Trasforma in forma** (scritte, curve e superfici diventano forme).
+- **Allinea** e **Spazia in modo uguale** sugli oggetti scelti, con **Asse**, **Bordo** e
+  **Riferimento** scelti nel pannello.
+- **Gruppi**: **Raggruppa**, **Scegli il gruppo**, **Nascondi/Mostra il gruppo**, **Togli dal
+  gruppo**; **Togli le modifiche** riporta la forma a com'era senza usare `Ctrl+Z`.
+- **Guida passo passo**: **Inizia la guida** costruisce una casetta in 13 passi verificati, con
+  **Indietro**, **Avanti**, **Esegui il passo** e **Chiudi**; ogni passo spiega che cosa sta per fare
+  e usa solo comandi che esistono davvero.
+
+### Limiti degli strumenti guidati, verificati
+
+- **Unisci o taglia** lavora su due forme scelte: l'oggetto attivo è la **forma principale**, l'altro
+  è l'**attrezzo**, che resta nella scena ma non si vede. Con una sola forma scelta o con più di due
+  il comando si ferma e lo spiega; l'attrezzo deve essere una forma chiusa (un piano aperto viene
+  rifiutato).
+- Lo **specchio** ha per piano il **cursore 3D**: una forma già a cavallo del piano viene rifiutata,
+  perché rispecchiarla non aggiungerebbe nulla. Il segnaposto **Specchio** si può spostare o
+  eliminare; se manca, il pannello avvisa che la modifica specchia la forma su se stessa.
+- La **ripetizione in fila** è un modificatore regolabile e resta un oggetto solo; quella **in
+  cerchio** crea copie vere, che si possono scegliere e spostare una per una.
+- **Ammorbidisci gli spigoli** è rifiutato sulle forme senza spigoli vivi (per esempio la sfera) e
+  sugli oggetti che non sono forme (scritte, luci): il messaggio dice quale comando usare al posto suo.
+- La **guida passo passo** è una sola (la casetta) e i passi non si saltano: si percorrono con
+  **Esegui il passo**, **Indietro** e **Avanti**.
 
 ## Funzioni non ancora presenti
 
 Non ci sono ancora: materiali e colori semplificati, sfondo, anteprima e immagine finale,
 animazione, gerarchia fra oggetti, salvataggio e riapertura con un flusso FormaFacile dedicato,
-importazione ed esportazione, scene iniziali guidate, flussi passo passo e assistente di intelligenza
-artificiale. **Non esistono pulsanti fittizi per queste funzioni**: i pannelli mostrano solo comandi
+importazione ed esportazione, altre guide passo passo oltre a quella della casetta e assistente di
+intelligenza artificiale. **Non esistono pulsanti fittizi per queste funzioni**: i pannelli mostrano solo comandi
 che hanno un effetto reale.
 
 Il programma di avvio apre la scena iniziale di Blender e non sostituisce la schermata iniziale né
@@ -64,7 +94,7 @@ della Vista 3D. Salvataggio e riapertura usano i normali comandi di Blender.
 - Il pacchetto `bpy==4.5.14` è installato in un ambiente virtuale separato (`/.venv`, escluso dal
   repository). Non è l'applicazione completa, ma espone la stessa interfaccia di programmazione,
   quindi le prove di `tests/blender/test_addon.py` sono state **eseguite davvero**:
-  `python3 scripts/controlla.py --test-bpy` (2810 controlli superati, più 134 prove di unità).
+  `python3 scripts/controlla.py --test-bpy` (3464 controlli superati, più 207 prove di unità).
   Le librerie grafiche di sistema mancanti (`libXrender`, `libXfixes`, `libXi`, `libxkbcommon`,
   `libSM`, `libICE`, `libGL`) vengono sostituite da librerie fittizie preparate da
   `scripts/ambiente_bpy_locale.py` nella cartella `.cache/librerie_bpy`: servono solo ad avviare il
@@ -107,7 +137,7 @@ Verificato automaticamente senza finestre:
 - esistenza e funzionamento dei comandi nativi di navigazione (`view_all`, `view_axis`, …);
 - cambio di disposizione dei pannelli (divisione di un'area in due Viste 3D), registrazione delle
   viste iniziali di tutte le disposizioni disponibili, avviso chiaro quando non esiste una Vista 3D;
-- disegno dei quattro pannelli e della testata sui dati veri: ogni pulsante esiste, ogni icona è fra
+- disegno dei cinque pannelli e della testata sui dati veri: ogni pulsante esiste, ogni icona è fra
   quelle verificate, ogni campo è collegato a un dato esistente, nessun testo inglese di ripiego,
   nessun nome tecnico nella modalità Semplice;
 - elenco lungo (limite e avviso), ricerca per nome (con e senza risultati), messaggio recente e

@@ -33,7 +33,7 @@ Che cosa viene controllato:
   oggetto) puntano a chiavi esistenti;
 - **lunghezza**: le etichette e i pulsanti rispettano i limiti pensati per la barra laterale
   (`LUNGHEZZA_MASSIMA_ETICHETTA`, `LUNGHEZZA_MASSIMA_AZIONE`, `LUNGHEZZA_MASSIMA_AZIONE_SINGOLA`);
-- **disegno vero**: dentro `bpy` le prove disegnano i quattro pannelli sui dati reali della scena e
+- **disegno vero**: dentro `bpy` le prove disegnano i cinque pannelli sui dati reali della scena e
   controllano che ogni testo disegnato sia italiano e che ogni icona usata sia fra quelle verificate.
 
 Il controllo automatico è un filtro, non una prova completa della qualità linguistica.
@@ -42,7 +42,7 @@ Il controllo automatico è un filtro, non una prova completa della qualità ling
 
 Quando Blender 4.5.x è disponibile, controllare:
 
-- i quattro pannelli della scheda **FormaFacile** nella Vista 3D e il pulsante nella testata;
+- i cinque pannelli della scheda **FormaFacile** nella Vista 3D e il pulsante nella testata;
 - i suggerimenti che compaiono passando il mouse su ogni pulsante;
 - i messaggi che seguono le azioni: "Aggiunto: Cubo", "Nome cambiato in Albero", "Nascosto: Sfera",
   "Vista su Albero.", "Non ci sono oggetti visibili da scegliere.", "Scelto e di nuovo visibile: …";
